@@ -34,16 +34,8 @@ def send_message():
 @app.route("/fetch", methods=["GET"])
 def fetch_messages():
     since = float(request.args.get("since", 0))
-    timeout = 20  # seconds
-    start = time.time()
-
-    while time.time() - start < timeout:
-        new_msgs = [m for m in messages if m["time"] > since]
-        if new_msgs:
-            return jsonify(new_msgs)
-        time.sleep(0.25)
-
-    return jsonify([])
+    new_msgs = [m for m in messages if m["time"] > since]
+    return jsonify(new_msgs)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
