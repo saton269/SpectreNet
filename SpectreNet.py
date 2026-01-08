@@ -7,6 +7,9 @@ CHANNEL = 16
 
 # In-memory message store
 messages = []  # each item: {"time": float, "text": str}
+next_id = 1    # incremental message ID
+
+MAX_MESSAGES = 100  # keep list small
 
 @app.route("/")
 def index():
@@ -21,20 +24,22 @@ def send_message():
         return jsonify({"error": "empty message"}), 400
 
     messages.append({
-        "time": time.time(),
+        "id": next_id,
         "text": text
     })
 
+    next_id += 1
+
     # keep list small
-    if len(messages) > 100:
+    if len(messages) > MAX_MESSAGES:
         messages.pop(0)
 
-    return jsonify({"status": "sent"})
+    return jsonify({"status": "sent", "id": next_id - 1})
 
 @app.route("/fetch", methods=["GET"])
 def fetch_messages():
-    since = float(request.args.get("since", 0))
-    new_msgs = [m for m in messages if m["time"] > since]
+    since_id = int(request.args.get("since_id", 0))
+    new_msgs = [m for m in messages if m["id"] > since_id]
     return jsonify(new_msgs)
 
 if __name__ == "__main__":
