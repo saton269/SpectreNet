@@ -26,7 +26,8 @@ def send_message():
 
     messages.append({
         "id": next_id,
-        "text": text
+        "text": text,
+        "sender": data.get("sender", "Unknown")
     })
 
     next_id += 1
