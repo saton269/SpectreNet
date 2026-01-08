@@ -17,6 +17,7 @@ def index():
 
 @app.route("/send", methods=["POST"])
 def send_message():
+    global next_id 
     data = request.get_json(force=True)
     text = data.get("text", "").strip()
 
