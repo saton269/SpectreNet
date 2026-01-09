@@ -1,10 +1,23 @@
 from flask import Flask, request, jsonify
 import time
+import json
+import random
+
 
 app = Flask(__name__)
 
+# Load airports and triggers from JSON
+with open("atc_config.json", "r") as f:
+    atc_config = json.load(f)
+
+ATC_TOWERS = atc_config["airports"]
+ATC_TRIGGERS = atc_config["triggers"]
+TRIGGER_PHRASES = atc_config["trigger_phrases"]
+
 # Per-frequency storage
 channels = {}
+
+DEFAULT_FREQUENCY = 16
 
 
 MAX_MESSAGES = 100  # keep list small
@@ -33,6 +46,44 @@ def cleanup_expired_frequencies():
 
     for freq in expired:
         del channels[freq]
+
+
+# ---------------------------
+# ATC Bot Logic
+# ---------------------------
+def handle_atc(message_text, channel):
+    """
+    Process ATC bot responses.
+    Message format: AIRPORT_CODE, CALLSIGN, request ...
+    """
+    parts = [x.strip() for x in message_text.split(",")]
+    if len(parts) < 3:
+        return None  # Not enough parts for ATC
+
+    airport_code, callsign, request_text = parts[0].upper(), parts[1], parts[2].lower()
+    tower = ATC_TOWERS.get(airport_code)
+    if not tower:
+        return None  # Unknown airport
+
+    # Only respond if message is on the airport's frequency
+    freq = tower.get("frequency", DEFAULT_FREQUENCY)
+    if channel != freq:
+        return None
+
+    # Check triggers
+    for action, phrases in TRIGGER_PHRASES.items():
+        for phrase in phrases:
+            if phrase in request_text:
+                # Pick a random response for this action
+                template = random.choice(ATC_TRIGGERS[action])
+                if "{taxiway}" in template:
+                    taxiway = tower["taxiways"][0]  # pick first taxiway
+                    response = f"{tower['name']}: {callsign}, {template.format(runway=tower['runways'][0], taxiway=taxiway)}"
+                else:
+                    response = f"{tower['name']}: {callsign}, {template.format(runway=tower['runways'][0])}"
+                return response, tower.get("sender", f"{airport_code} ATC")
+
+    return None  # No trigger matched
 
 @app.route("/")
 def index():
@@ -87,8 +138,19 @@ def send_message():
     channel["messages"].append(msg)
     channel["next_id"] += 1
 
+    atc_response = handle_atc(text, freq)
+    if atc_response:
+        atc_text, atc_sender = atc_response
+        atc_msg = {
+            "id": channel["next_id"],
+            "text": atc_text,
+            "sender": atc_sender
+        }
+        channel["messages"].append(atc_msg)
+        channel["next_id"] += 1
+
     # message cap
-    if len(channel["messages"]) > MAX_MESSAGES_PER_FREQ:
+    if len(channel["messages"]) > MAX_MESSAGES:
         channel["messages"].pop(0)
 
     return jsonify({
