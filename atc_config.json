@@ -1,24 +1,26 @@
 {
   "airports": {
     "SLHA": {
-      "name": "Hollywood ATC",
+      "name": "Hollywood Airport",
       "sender": "SLHA ATC",
       "frequency": 119200,
-      "runways": ["27"],
-      "taxiways": ["Alpha", "Bravo"]
+      "landings": ["36R"],
+      "departures": ["18L"],
+      "taxiways": ["Charlie"]
     },
     "SLSN": {
-      "name": "Sno ATC",
+      "name": "Second Norway Lufthavn",
       "sender": "SLSN ATC",
       "frequency": 119200,
-      "runways": ["09", "27"],
-      "taxiways": ["Charlie"]
+      "landings": ["09R"],
+      "departures": ["27R"],
+      "taxiways": ["X-Ray"]
     }
   },
   "triggers": {
-    "landing": ["cleared to land runway {runway}", "approach approved, land runway {runway}"],
-    "takeoff": ["cleared for takeoff runway {runway}", "you are cleared for departure runway {runway}"],
-    "taxi": ["taxi to runway {runway} via taxiway {taxiway}"]
+    "landing": ["cleared to land runway {landings}", "approach approved, land runway {landings}"],
+    "takeoff": ["cleared for takeoff runway {departures}", "you are cleared for departure runway {departures}"],
+    "taxi": ["taxi to runway {landings} via taxiway {taxiway}"]
   },
   "trigger_phrases": {
     "landing": ["request landing", "landing"],

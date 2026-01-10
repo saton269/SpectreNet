@@ -74,13 +74,36 @@ def handle_atc(message_text, channel):
     for action, phrases in TRIGGER_PHRASES.items():
         for phrase in phrases:
             if phrase in request_text:
-                # Pick a random response for this action
+
+                # Pick a random response template
                 template = random.choice(ATC_TRIGGERS[action])
-                if "{taxiway}" in template:
-                    taxiway = tower["taxiways"][0]  # pick first taxiway
-                    response = f"{tower['name']}: {callsign}, {template.format(runway=tower['runways'][0], taxiway=taxiway)}"
+
+                # Select runway based on action
+                if action == "landing":
+                    runway = random.choice(tower["landings"])
+
+                elif action == "takeoff":
+                    runway = random.choice(tower["departures"])
+
                 else:
-                    response = f"{tower['name']}: {callsign}, {template.format(runway=tower['runways'][0])}"
+                    runway = None
+
+                # Taxiway logic (only if template needs it)
+                if "{taxiway}" in template and "taxiways" in tower:
+                    taxiway = tower["taxiways"][0]
+                    response_text = template.format(
+                        landings=runway,
+                        departures=runway,
+                        taxiway=taxiway
+                    )
+                else:
+                    response_text = template.format(
+                        landings=runway,
+                        departures=runway
+                    )
+
+                response = f"{callsign}, {response_text}"
+
                 return response, tower.get("sender", f"{airport_code} ATC")
 
     return None  # No trigger matched
