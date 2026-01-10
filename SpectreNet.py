@@ -85,11 +85,9 @@ def handle_atc(message_text, channel):
                 elif action == "takeoff":
                     runway = random.choice(tower["departures"])
 
-                else:
-                    runway = None
 
                 # Taxiway logic (only if template needs it)
-                if "{taxiway}" in template and "taxiways" in tower:
+                elif "{taxiway}" in template and "taxiways" in tower:
                     taxiway = tower["taxiways"][0]
                     response_text = template.format(
                         landings=runway,

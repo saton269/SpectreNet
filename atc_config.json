@@ -20,11 +20,11 @@
   "triggers": {
     "landing": ["cleared to land runway {landings}", "approach approved, land runway {landings}"],
     "takeoff": ["cleared for takeoff runway {departures}", "you are cleared for departure runway {departures}"],
-    "taxi": ["taxi to runway {landings} via taxiway {taxiway}"]
+    "taxi": ["taxi to runway {departures} via taxiway {taxiway}","taxi via {taxiway} to runway {departures}"]
   },
   "trigger_phrases": {
-    "landing": ["request landing", "landing"],
-    "takeoff": ["request takeoff", "take off", "takeoff"],
-    "taxi": ["request taxi", "taxi"]
+    "landing": ["request landing", "landing", "request to land", "clearnace to land"],
+    "takeoff": ["request takeoff","request departure", "take off", "takeoff", "depart", "departure"],
+    "taxi": ["request taxi","request taxi to runway", "taxi", "taxiing"]
   }
 }
