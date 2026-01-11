@@ -114,6 +114,28 @@ def index():
         "active_frequencies": len(channels)
     })
 
+@app.route("/atc/lookup", methods=["GET"])
+def atc_lookup():
+    airport = request.args.get("airport", "").upper()
+    role = request.args.get("role", "tower").lower()  # "tower" or "ground"
+
+    tower = ATC_TOWERS.get(airport)
+    if not tower:
+        return jsonify({"error": "unknown airport"}), 404
+
+    # Determine frequency based on role
+    if role == "ground":
+        freq = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+        sender = tower.get("ground_sender", f"{airport} Ground")
+    else:
+        freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+        sender = tower.get("tower_sender", f"{airport} Tower")
+
+    return jsonify({
+        "airport": airport,
+        "frequency": freq,
+        "sender": sender
+    })
 
 @app.route("/state", methods=["GET"])
 def get_state():

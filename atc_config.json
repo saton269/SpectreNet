@@ -4,6 +4,8 @@
       "name": "Hollywood Airport",
       "sender": "SLHA ATC",
       "frequency": 119200,
+      "tower_frequency": 119200, 
+      "ground_frequency": 121800, 
       "landings": ["36R"],
       "departures": ["18L"],
       "taxiways": ["Charlie"]
@@ -12,6 +14,8 @@
       "name": "Second Norway Lufthavn",
       "sender": "SLSN ATC",
       "frequency": 119200,
+      "tower_frequency": 119200, 
+      "ground_frequency": 121925, 
       "landings": ["09R"],
       "departures": ["27R"],
       "taxiways": ["X-Ray"]
