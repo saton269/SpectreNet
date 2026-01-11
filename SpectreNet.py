@@ -158,7 +158,7 @@ def handle_atc(message_text, channel):
 
 
                 # --- Final ATC message ---
-                return response, tower.get("sender", f"{airport_code} ATC")
+                return response_text, tower.get("sender", f"{airport_code} ATC")
 
     return None
 
