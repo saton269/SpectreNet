@@ -13,6 +13,8 @@ with open("atc_config.json", "r") as f:
 ATC_TOWERS = atc_config["airports"]
 ATC_TRIGGERS = atc_config["triggers"]
 TRIGGER_PHRASES = atc_config["trigger_phrases"]
+HANDOFF_MESSAGES = atc_config.get("handoff_messages", {})
+ROLE_MAP = atc_config.get("role_map", {})
 
 # Per-frequency storage
 channels = {}
@@ -56,54 +58,74 @@ def handle_atc(message_text, channel):
     Process ATC bot responses.
     Message format: AIRPORT_CODE, CALLSIGN, request ...
     """
+
+    # --- Parse message ---
     parts = [x.strip() for x in message_text.split(",")]
     if len(parts) < 3:
-        return None  # Not enough parts for ATC
+        return None
 
-    airport_code, callsign, request_text = parts[0].upper(), parts[1], parts[2].lower()
+    airport_code = parts[0].upper()
+    callsign = parts[1]
+    request_text = parts[2].lower()
+
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
-        return None  # Unknown airport
+        return None
 
-    # Only respond if message is on the airport's frequency
-    freq = tower.get("frequency", DEFAULT_FREQUENCY)
-    request_text_lower = request_text.lower()
-    if any(x in request_text_lower for x in TRIGGER_PHRASES.get("taxi", [])) or any(x in request_text_lower for x in TRIGGER_PHRASES.get("takeoff", [])):
+    # --- Determine role ---
+    # Ground ONLY handles taxi / pushback
+    is_ground_request = any(
+        phrase in request_text
+        for phrase in TRIGGER_PHRASES.get("taxi", [])
+    )
+
+    if is_ground_request:
         role = "ground"
+        freq_to_check = tower.get(
+            "ground_frequency",
+            tower.get("frequency", DEFAULT_FREQUENCY)
+        )
+        sender_name = tower.get(
+            "ground_sender",
+            f"{airport_code} Ground"
+        )
     else:
         role = "tower"
+        freq_to_check = tower.get(
+            "tower_frequency",
+            tower.get("frequency", DEFAULT_FREQUENCY)
+        )
+        sender_name = tower.get(
+            "tower_sender",
+            f"{airport_code} Tower"
+        )
 
-    # Pick correct frequency
-    if role == "ground":
-        freq_to_check = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
-        sender_name = tower.get("ground_sender", f"{airport_code} Ground")
-    else:
-        freq_to_check = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
-        sender_name = tower.get("tower_sender", f"{airport_code} Tower")
-
-    # Only respond if message is on that frequency
+    # --- Frequency must match ---
     if channel != freq_to_check:
         return None
 
-    # Check triggers
+    # --- Match triggers ---
     for action, phrases in TRIGGER_PHRASES.items():
         for phrase in phrases:
             if phrase in request_text:
 
-                # Pick a random response template
                 template = random.choice(ATC_TRIGGERS[action])
 
-                # Select runway based on action
+                # --- Runway selection ---
                 if action == "landing":
-                    runway = random.choice(tower["landings"])
+                    runway = random.choice(
+                        tower.get("landings", tower.get("runways", []))
+                    )
+                elif action in ("takeoff", "taxi"):
+                    runway = random.choice(
+                        tower.get("departures", tower.get("runways", []))
+                    )
+                else:
+                    runway = random.choice(tower.get("runways", []))
 
-                if action in("takeoff", "taxi"):
-                    runway = random.choice(tower["departures"])
-
-
-                # Taxiway logic (only if template needs it)
+                # --- Build response ---
                 if "{taxiway}" in template and "taxiways" in tower:
-                    taxiway = tower["taxiways"][0]
+                    taxiway = random.choice(tower["taxiways"])
                     response_text = template.format(
                         landings=runway,
                         departures=runway,
@@ -114,12 +136,32 @@ def handle_atc(message_text, channel):
                         landings=runway,
                         departures=runway
                     )
+                    
+                # --- Ground → Tower handoff ---
+                if role == "ground" and action == "taxi":
+                    handoffs = HANDOFF_MESSAGES.get("ground_to_tower", [])
 
-                response = f"{sender_name}: {callsign}, {response_text}"
+                    if handoffs:
+                        handoff_template = random.choice(handoffs)
 
-                return response, tower.get("sender", f"{airport_code} ATC")
+                        tower_freq = tower.get(
+                            "tower_frequency",
+                            tower.get("frequency", DEFAULT_FREQUENCY)
+                        )
 
-    return None  # No trigger matched
+                        handoff_text = handoff_template.format(
+                            airport=airport_code,
+                            frequency=tower_freq
+                        )
+
+                        response_text = f"{response_text} {handoff_text}"
+
+
+                # --- Final ATC message ---
+                return f"{callsign}, {response_text}"
+
+    return None
+
 
 @app.route("/")
 def index():

@@ -1,4 +1,14 @@
 {
+  "role_map": {
+    "taxi": "ground",
+    "pushback": "ground",
+    "gate": "ground",
+
+    "takeoff": "tower",
+    "landing": "tower",
+    "approach": "tower"
+  },
+
   "airports": {
     "SLHA": {
       "name": "Hollywood Airport",
@@ -21,11 +31,20 @@
       "taxiways": ["X-Ray"]
     }
   },
+
+  "handoff_messages": {
+    "ground_to_tower": [
+      "Contact {airport} Tower on {frequency} when ready for departure.",
+      "Switch to {airport} Tower at {frequency} for takeoff clearance."
+    ]
+  },
+
   "triggers": {
     "landing": ["cleared to land runway {landings}", "approach approved, land runway {landings}"],
     "takeoff": ["cleared for takeoff runway {departures}", "you are cleared for departure runway {departures}"],
     "taxi": ["taxi to runway {departures} via taxiway {taxiway}","taxi via {taxiway} to runway {departures}"]
   },
+
   "trigger_phrases": {
     "landing": ["request landing", "landing", "request to land", "clearance to land"],
     "takeoff": ["request takeoff","request departure", "take off", "takeoff", "depart", "departure"],
