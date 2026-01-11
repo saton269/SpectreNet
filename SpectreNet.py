@@ -67,7 +67,20 @@ def handle_atc(message_text, channel):
 
     # Only respond if message is on the airport's frequency
     freq = tower.get("frequency", DEFAULT_FREQUENCY)
-    if channel != freq:
+    request_text_lower = request_text.lower()
+    if any(x in request_text_lower for x in TRIGGER_PHRASES.get("taxi", [])) or any(x in request_text_lower for x in TRIGGER_PHRASES.get("takeoff", [])):
+        role = "ground"
+    else:
+        role = "tower"
+
+    # Pick correct frequency
+    if role == "ground":
+        freq_to_check = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+    else:
+        freq_to_check = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+
+    # Only respond if message is on that frequency
+    if channel != freq_to_check:
         return None
 
     # Check triggers
