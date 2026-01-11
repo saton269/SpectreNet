@@ -76,8 +76,10 @@ def handle_atc(message_text, channel):
     # Pick correct frequency
     if role == "ground":
         freq_to_check = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+        sender_name = tower.get("ground_sender", f"{airport_code} Ground")
     else:
         freq_to_check = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+        sender_name = tower.get("tower_sender", f"{airport_code} Tower")
 
     # Only respond if message is on that frequency
     if channel != freq_to_check:
@@ -113,7 +115,7 @@ def handle_atc(message_text, channel):
                         departures=runway
                     )
 
-                response = f"{callsign}, {response_text}"
+                response = f"{sender_name}: {callsign}, {response_text}"
 
                 return response, tower.get("sender", f"{airport_code} ATC")
 
