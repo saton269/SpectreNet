@@ -136,7 +136,7 @@ def handle_atc(message_text, channel):
                         landings=runway,
                         departures=runway
                     )
-                    
+
                 # --- Ground → Tower handoff ---
                 if role == "ground" and action == "taxi":
                     handoffs = HANDOFF_MESSAGES.get("ground_to_tower", [])
@@ -158,7 +158,7 @@ def handle_atc(message_text, channel):
 
 
                 # --- Final ATC message ---
-                return f"{callsign}, {response_text}"
+                return response, tower.get("sender", f"{airport_code} ATC")
 
     return None
 
