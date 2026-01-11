@@ -23,7 +23,7 @@
     "taxi": ["taxi to runway {departures} via taxiway {taxiway}","taxi via {taxiway} to runway {departures}"]
   },
   "trigger_phrases": {
-    "landing": ["request landing", "landing", "request to land", "clearnace to land"],
+    "landing": ["request landing", "landing", "request to land", "clearance to land"],
     "takeoff": ["request takeoff","request departure", "take off", "takeoff", "depart", "departure"],
     "taxi": ["request taxi","request taxi to runway", "taxi", "taxiing"]
   }
