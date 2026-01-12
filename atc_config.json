@@ -29,17 +29,29 @@
       "landings": ["09R"],
       "departures": ["27R"],
       "taxiways": ["X-Ray"]
+    },
+    "SLJA": {
+      "name": "Juneau Regional",
+      "sender": "SLJA ATC",
+      "frequency": 119200,
+      "tower_frequency": 121900, 
+      "ground_frequency": 121900, 
+      "landings": ["14"],
+      "departures": ["32"],
+      "taxiways": ["Main"]
     }
   },
 
   "handoff_messages": {
     "ground_to_tower": [
-      "Contact {airport} Tower on {frequency} when ready for departure.",
-      "Switch to {airport} Tower at {frequency} for takeoff clearance."
+      "contact {airport} Tower on {frequency} when ready for departure.",
+      "switch to {airport} Tower at {frequency} for takeoff clearance.",
+      "after taxi, contact {airport} Tower at {frequency} for departure.",
+      "proceed to runway and contact {airport} Tower on {frequency}."
     ]
   },
 
-  "triggers": {
+  "responses": {
     "landing": ["cleared to land runway {landings}", "approach approved, land runway {landings}"],
     "takeoff": ["cleared for takeoff runway {departures}", "you are cleared for departure runway {departures}"],
     "taxi": ["taxi to runway {departures} via taxiway {taxiway}","taxi via {taxiway} to runway {departures}"]

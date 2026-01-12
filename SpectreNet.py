@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify # pyright: ignore[reportMissingImports]
 import time
 import json
 import random
@@ -11,7 +11,7 @@ with open("atc_config.json", "r") as f:
     atc_config = json.load(f)
 
 ATC_TOWERS = atc_config["airports"]
-ATC_TRIGGERS = atc_config["triggers"]
+ATC_RESPONSES = atc_config["responses"]
 TRIGGER_PHRASES = atc_config["trigger_phrases"]
 HANDOFF_MESSAGES = atc_config.get("handoff_messages", {})
 ROLE_MAP = atc_config.get("role_map", {})
@@ -109,7 +109,7 @@ def handle_atc(message_text, channel):
         for phrase in phrases:
             if phrase in request_text:
 
-                template = random.choice(ATC_TRIGGERS[action])
+                template = random.choice(ATC_RESPONSES[action])
 
                 # --- Runway selection ---
                 if action == "landing":
@@ -139,26 +139,30 @@ def handle_atc(message_text, channel):
 
                 # --- Ground → Tower handoff ---
                 if role == "ground" and action == "taxi":
-                    handoffs = HANDOFF_MESSAGES.get("ground_to_tower", [])
+                    tower_freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+                    ground_freq = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
 
-                    if handoffs:
-                        handoff_template = random.choice(handoffs)
+                    if tower_freq != ground_freq:
+                        if random.random() < 0.8: #80% chance of handoff message
+                            handoffs = HANDOFF_MESSAGES.get("ground_to_tower", [])
 
-                        tower_freq = tower.get(
-                            "tower_frequency",
-                            tower.get("frequency", DEFAULT_FREQUENCY)
-                        )
+                            if handoffs:
+                                handoff_template = random.choice(handoffs)
 
-                        handoff_text = handoff_template.format(
-                            airport=airport_code,
-                            frequency=tower_freq
-                        )
+                                tower_freq = tower.get(
+                                    "tower_frequency",
+                                    tower.get("frequency", DEFAULT_FREQUENCY)
+                                )
 
-                        response_text = f"{response_text} {handoff_text}"
+                                handoff_text = handoff_template.format(
+                                    airport=airport_code,
+                                    frequency=tower_freq
+                                )
+                                response_text = f"{response_text}, {handoff_text}"
 
 
                 # --- Final ATC message ---
-                return response_text, tower.get("sender", f"{airport_code} ATC")
+                return response_text.capitalize(), tower.get("sender", f"{airport_code} ATC")
 
     return None
 
