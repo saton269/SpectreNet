@@ -160,9 +160,11 @@ def handle_atc(message_text, channel):
                                 )
                                 response_text = f"{response_text}, {handoff_text}"
 
+                response = f"{callsign}, {response_text}"
+                capitalized = response[0].upper() + response[1:]
 
                 # --- Final ATC message ---
-                return response_text.capitalize(), tower.get("sender", f"{airport_code} ATC")
+                return capitalized, tower.get("sender", f"{airport_code} ATC")
 
     return None
 
