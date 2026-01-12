@@ -49,6 +49,13 @@ def cleanup_expired_frequencies():
     for freq in expired:
         del channels[freq]
 
+def format_freq(freq):
+    if freq < 1000:
+        return f"CH {freq}"
+    mhz = freq // 1000
+    khz = freq % 1000
+    khz_str = f"{khz:03d}"
+    return f"{mhz}.{khz_str} MHz"
 
 # ---------------------------
 # ATC Bot Logic
@@ -153,10 +160,11 @@ def handle_atc(message_text, channel):
                                     "tower_frequency",
                                     tower.get("frequency", DEFAULT_FREQUENCY)
                                 )
+                                formatted_freq = format_freq(tower_freq)
 
                                 handoff_text = handoff_template.format(
                                     airport=airport_code,
-                                    frequency=tower_freq
+                                    frequency=formatted_freq
                                 )
                                 response_text = f"{response_text}, {handoff_text}"
 
