@@ -81,6 +81,9 @@ def handle_atc(message_text, channel):
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
         return None
+    
+    tower_freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+    ground_freq = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
 
     # --- Determine role ---
     # Ground ONLY handles taxi / pushback
@@ -169,8 +172,6 @@ def handle_atc(message_text, channel):
 
                 # --- Ground → Tower handoff ---
                 if role == "ground" and action == "taxi":
-                    tower_freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
-                    ground_freq = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
 
                     if tower_freq != ground_freq:
                         if random.random() < 0.8: #80% chance of handoff message
