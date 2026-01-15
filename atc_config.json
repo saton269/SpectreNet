@@ -42,6 +42,15 @@
     }
   },
 
+  "unknown_request_responses": [
+  "say again request",
+  "unable to comply, clarify request",
+  "request not understood",
+  "stand by",
+  "verify request"
+],
+
+
   "handoff_messages": {
     "ground_to_tower": [
       "contact {airport} Tower on {frequency} when ready for departure.",

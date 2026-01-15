@@ -75,6 +75,9 @@ def handle_atc(message_text, channel):
     callsign = parts[1]
     request_text = parts[2].lower()
 
+    matched_action = False
+
+
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
         return None
@@ -107,14 +110,34 @@ def handle_atc(message_text, channel):
             f"{airport_code} Tower"
         )
 
-    # --- Frequency must match ---
+    # --- Frequency / wrong-frequency redirects ---
     if channel != freq_to_check:
-        return None
+        # Ground-type request (taxi) but sent on tower freq
+        if is_ground_request and (channel == tower_freq) and (tower_freq != ground_freq):
+            formatted_freq = format_freq(ground_freq)
+            response = (
+                f"{callsign}, please contact {airport_code} Ground on "
+                f"{formatted_freq} for taxi and ground requests."
+            )
+        # Tower-type request (takeoff/landing/other) but sent on ground freq
+        elif (not is_ground_request) and (channel == ground_freq) and (tower_freq != ground_freq):
+            formatted_freq = format_freq(tower_freq)
+            response = (
+                f"{callsign}, please contact {airport_code} Tower on "
+                f"{formatted_freq} for that request."
+            )
+        else:
+            # Completely wrong frequency for this airport – stay silent
+            return None
+
+        capitalized = response[0].upper() + response[1:]
+        return capitalized, tower.get("sender", f"{airport_code} ATC")
 
     # --- Match triggers ---
     for action, phrases in TRIGGER_PHRASES.items():
         for phrase in phrases:
             if phrase in request_text:
+                matched_action = True
 
                 template = random.choice(ATC_RESPONSES[action])
 
@@ -173,6 +196,17 @@ def handle_atc(message_text, channel):
 
                 # --- Final ATC message ---
                 return capitalized, tower.get("sender", f"{airport_code} ATC")
+            
+    # --- Fallback: valid ATC call but unknown request ---
+    if not matched_action:
+        fallback_responses =atc_config.get("unknown_request_responses", [])
+        if fallback_responses:
+            fallback_text = random.choice(fallback_responses)
+            # Keep same format as normal responses: "<CALLSIGN>, <text>"
+            response = f"{callsign}, {fallback_text}"
+            capitalized = response[0].upper() + response[1:]
+            return capitalized, tower.get("sender", f"{airport_code} ATC")
+
 
     return None
 
