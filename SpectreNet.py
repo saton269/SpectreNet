@@ -80,75 +80,95 @@ def handle_atc(message_text, channel):
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
         return None
-    
-    tower_freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
-    ground_freq = tower.get("ground_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
 
-    # --- Determine role ---
+    # --- Base frequencies for this airport ---
+    tower_freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
+    ground_freq = tower.get("ground_frequency", tower_freq)  # same as tower if no ground freq
+
+    # --- Classify the request intent ---
     # Ground ONLY handles taxi / pushback
     is_ground_request = any(
         phrase in request_text
         for phrase in TRIGGER_PHRASES.get("taxi", [])
     )
 
-    if is_ground_request:
-        role = "ground"
-        freq_to_check = ground_freq
-        sender_name = tower.get(
-            "ground_sender",
-            f"{airport_code} Ground"
-        )
-    else:
-        role = "tower"
-        freq_to_check = tower_freq
-        sender_name = tower.get(
-            "tower_sender",
-            f"{airport_code} Tower"
-        )
+    # Tower-style requests (takeoff / landing, you can add more actions)
+    is_tower_request = any(
+        phrase in request_text
+        for action in ("takeoff", "landing")
+        for phrase in TRIGGER_PHRASES.get(action, [])
+    )
 
     # =========================================================
-    # NEW: Redirect on frequency mismatch (instead of silent None)
+    # 1) Redirects: real ground/tower requests on the *wrong* freq
     # =========================================================
-    # --- Frequency handling (redirects + normal match) ---
-    if channel != freq_to_check:
-        # Tower frequency, but Ground request
-        if is_ground_request and channel == tower_freq and ground_freq != tower_freq:
-            templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
-            if templates:
-                template = random.choice(templates)
-                text = template.format(
-                    callsign=callsign,
-                    airport=airport_code,
-                    frequency=format_freq(ground_freq)
-                )
-                text = text[0].upper() + text[1:]
 
-                tower_sender = tower.get("tower_sender", f"{airport_code} Tower")
-                return text, tower_sender
+    # Taxi/pushback (ground) on Tower frequency -> redirect to Ground
+    if (
+        tower_freq != ground_freq
+        and is_ground_request
+        and channel == tower_freq
+        and channel != ground_freq
+    ):
+        templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
+        if templates:
+            template = random.choice(templates)
+            text = template.format(
+                callsign=callsign,
+                airport=airport_code,
+                frequency=format_freq(ground_freq)
+            )
+            text = text[0].upper() + text[1:]
 
-            return None
+            tower_sender = tower.get("tower_sender", f"{airport_code} Tower")
+            return text, tower_sender
 
-        # Ground frequency, but Tower request
-        if (not is_ground_request) and channel == ground_freq and tower_freq != ground_freq:
-            templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
-            if templates:
-                template = random.choice(templates)
-                text = template.format(
-                    callsign=callsign,
-                    airport=airport_code,
-                    frequency=format_freq(tower_freq)
-                )
-                text = text[0].upper() + text[1:]
+        # No templates? just ignore like before
+        return None
 
-                ground_sender = tower.get("ground_sender", f"{airport_code} Ground")
-                return text, ground_sender
+    # Takeoff/landing (tower) on Ground frequency -> redirect to Tower
+    if (
+        tower_freq != ground_freq
+        and is_tower_request
+        and channel == ground_freq
+        and channel != tower_freq
+    ):
+        templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
+        if templates:
+            template = random.choice(templates)
+            text = template.format(
+                callsign=callsign,
+                airport=airport_code,
+                frequency=format_freq(tower_freq)
+            )
+            text = text[0].upper() + text[1:]
 
-            return None
+            ground_sender = tower.get("ground_sender", f"{airport_code} Ground")
+            return text, ground_sender
 
         return None
 
+    # =========================================================
+    # 2) If the tuned frequency doesn't belong to this airport, ignore
+    #    (For single-frequency airports, tower_freq == ground_freq)
+    # =========================================================
+    if channel not in (tower_freq, ground_freq):
+        return None
 
-    # --- Match triggers ---
+    # =========================================================
+    # 3) Determine role based on the frequency we are actually tuned to
+    # =========================================================
+    if channel == ground_freq and ground_freq != tower_freq:
+        role = "ground"
+        sender_name = tower.get("ground_sender", f"{airport_code} Ground")
+    else:
+        # Default: tower (covers both tower freq and single-frequency airports)
+        role = "tower"
+        sender_name = tower.get("tower_sender", f"{airport_code} Tower")
+
+    # =========================================================
+    # 4) Normal ATC trigger matching
+    # =========================================================
     for action, phrases in TRIGGER_PHRASES.items():
         for phrase in phrases:
             if phrase in request_text:
@@ -181,22 +201,14 @@ def handle_atc(message_text, channel):
                         departures=runway
                     )
 
-                # --- Ground → Tower handoff ---
+                # --- Ground → Tower handoff (only when actually on Ground) ---
                 if role == "ground" and action == "taxi":
-
                     if tower_freq != ground_freq:
-                        if random.random() < 0.8: #80% chance of handoff message
+                        if random.random() < 0.8:  # 80% chance
                             handoffs = HANDOFF_MESSAGES.get("ground_to_tower", [])
-
                             if handoffs:
                                 handoff_template = random.choice(handoffs)
-
-                                tower_freq = tower.get(
-                                    "tower_frequency",
-                                    tower.get("frequency", DEFAULT_FREQUENCY)
-                                )
                                 formatted_freq = format_freq(tower_freq)
-
                                 handoff_text = handoff_template.format(
                                     airport=airport_code,
                                     frequency=formatted_freq
@@ -206,15 +218,13 @@ def handle_atc(message_text, channel):
                 response = f"{callsign}, {response_text}"
                 capitalized = response[0].upper() + response[1:]
 
-                # --- Final ATC message ---
-                return capitalized, tower.get("sender", f"{airport_code} ATC")
-            
-    # ------------------------------------------------------------
-    # Fallback: unknown / unrecognized request on a valid frequency
-    # ------------------------------------------------------------
-    # Try role-specific unknown templates, then default
-    templates = UNKNOWN_MESSAGES.get(role) or UNKNOWN_MESSAGES.get("default", [])
+                # Use per-role sender_name (Tower / Ground)
+                return capitalized, sender_name
 
+    # =========================================================
+    # 5) Fallback: unknown / unrecognized request on a valid freq
+    # =========================================================
+    templates = UNKNOWN_MESSAGES.get(role) or UNKNOWN_MESSAGES.get("default", [])
     if templates:
         template = random.choice(templates)
         unknown_text = template.format(
@@ -225,7 +235,9 @@ def handle_atc(message_text, channel):
 
         return unknown_text, sender_name
 
+    # No unknown templates defined, behave like original: silent
     return None
+
 
 
 @app.route("/")
