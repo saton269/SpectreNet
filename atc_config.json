@@ -42,13 +42,41 @@
     }
   },
 
-  "unknown_request_responses": [
-  "say again request",
-  "unable to comply, clarify request",
-  "request not understood",
-  "stand by",
-  "verify request"
-],
+  "redirects": {
+    "tower_to_ground": [
+      "{callsign}, taxi and pushback are handled by {airport} Ground. Contact Ground on {frequency}.",
+      "{callsign}, for taxi, contact {airport} Ground on {frequency}.",
+      "{callsign}, ground movement is on {airport} Ground. Switch to {frequency}.",
+      "{callsign}, unable to issue taxi on this frequency. Contact {airport} Ground {frequency}."
+    ],
+    "ground_to_tower": [
+      "{callsign}, that request is handled by {airport} Tower. Contact Tower on {frequency}.",
+      "{callsign}, for departure or arrival clearance, contact {airport} Tower on {frequency}.",
+      "{callsign}, switch to {airport} Tower {frequency} for this request.",
+      "{callsign}, unable to handle this on Ground. Contact {airport} Tower on {frequency}."
+    ]
+  },
+
+  
+  "unknown": {
+    "tower": [
+      "{callsign}, say again?",
+      "{callsign}, unable to process that request, say again with your intention.",
+      "{callsign}, please state your request.",
+      "{callsign}, Tower did not copy your request, say again."
+    ],
+    "ground": [
+      "{callsign}, say again for Ground.",
+      "{callsign}, Ground is unable to process that request, please clarify.",
+      "{callsign}, please restate your taxi or service request.",
+      "{callsign}, Ground did not copy your request, say again."
+    ],
+    "default": [
+      "{callsign}, say again?",
+      "{callsign}, unable, please clarify your request."
+    ]
+  },
+
 
 
   "handoff_messages": {
