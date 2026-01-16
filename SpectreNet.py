@@ -59,23 +59,55 @@ def format_freq(freq):
     khz_str = f"{khz:03d}"
     return f"{mhz}.{khz_str} MHz"
 
+def normalize_atc_message(message_text: str, sender_name: str):
+    """
+    Supports:
+      AIRPORT, CALLSIGN, request ...
+      AIRPORT, request ...
+
+    Returns: (airport_code, callsign, request_text) or (None, None, None)
+    """
+    # Limit splits so commas in the request are preserved
+    parts = [x.strip() for x in message_text.split(",", 2)]
+
+    if len(parts) < 2:
+        return None, None, None
+
+    airport_code = parts[0].upper()
+
+    if len(parts) == 2:
+        # Example: "SLHA, request takeoff."
+        callsign = sender_name
+        request_text = parts[1]
+        return airport_code, callsign, request_text
+
+    # Example: "SLHA, N463R6, request takeoff."
+    callsign = parts[1].strip() or sender_name
+    request_text = parts[2]
+    return airport_code, callsign, request_text
+
+
 # ---------------------------
 # ATC Bot Logic
 # ---------------------------
-def handle_atc(message_text, channel):
+def handle_atc(message_text, channel, sender_name):
     """
     Process ATC bot responses.
     Message format: AIRPORT_CODE, CALLSIGN, request ...
     """
 
     # --- Parse message ---
-    parts = [x.strip() for x in message_text.split(",")]
-    if len(parts) < 3:
+        # --- Parse & normalize (fills callsign if user omitted it) ---
+    airport_code, callsign, request_text = normalize_atc_message(
+        message_text,
+        sender_name,
+    )
+
+    if not airport_code or not request_text:
         return None
 
-    airport_code = parts[0].upper()
-    callsign = parts[1]
-    request_text = parts[2].lower()
+    request_text = request_text.lower()
+
 
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
@@ -315,7 +347,7 @@ def send_message():
     channel["messages"].append(msg)
     channel["next_id"] += 1
 
-    atc_response = handle_atc(text, freq)
+    atc_response = handle_atc(text, freq, sender)
     if atc_response:
         atc_text, atc_sender = atc_response
         atc_msg = {
