@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify # pyright: ignore[reportMissingImports
 import time
 import json
 import random
+import threading
 
 
 app = Flask(__name__)
@@ -17,9 +18,17 @@ HANDOFF_MESSAGES = atc_config.get("handoff_messages", {})
 ROLE_MAP = atc_config.get("role_map", {})
 REDIRECT_MESSAGES = atc_config.get("redirects", {})
 UNKNOWN_MESSAGES = atc_config.get("unknown", {})
+AUTO_CLEAR_RESPONSES = atc_config.get("auto_clear", {})
+SEQUENCING = atc_config.get("sequencing", {})
+OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
+HOLD_MESSAGES = SEQUENCING.get("holds", {})
+
+
 
 # Per-frequency storage
 channels = {}
+
+RUNWAY_STATE = {}
 
 DEFAULT_FREQUENCY = 16
 
@@ -58,6 +67,29 @@ def format_freq(freq):
     khz = freq % 1000
     khz_str = f"{khz:03d}"
     return f"{mhz}.{khz_str} MHz"
+
+def get_runway_state(airport, runway):
+    airport_state = RUNWAY_STATE.setdefault(airport, {})
+    state = airport_state.get(runway)
+    if not state:
+        state = {
+            "active": None,          # dict or None
+            "queue": [],             # waiting aircraft
+            "expires_at": 0
+        }
+        airport_state[runway] = state
+    return state
+
+def runway_active(state):
+    return state["active"] and time.time() < state["expires_at"]
+
+def set_runway_active(state, entry, seconds):
+    state["active"] = entry
+    state["expires_at"] = time.time() + seconds
+
+def clear_runway(state):
+    state["active"] = None
+    state["expires_at"] = 0
 
 def normalize_atc_message(message_text: str, sender_name: str):
     """
@@ -218,6 +250,59 @@ def handle_atc(message_text, channel, sender_name):
                     )
                 else:
                     runway = random.choice(tower.get("runways", []))
+
+                # --------------------------------------------------
+                # Runway sequencing (landing / takeoff only)
+                # --------------------------------------------------
+                if (
+                    SEQUENCING.get("enabled", True)
+                    and role == "tower"
+                    and action in ("landing", "takeoff")
+                ):
+                    state = get_runway_state(airport_code, runway)
+
+                    # Runway currently occupied → HOLD
+                    if runway_active(state):
+                        entry = {
+                            "airport": airport_code,
+                            "runway": runway,
+                            "callsign": callsign,
+                            "action": action,
+                            "frequency": channel,
+                            "sender": sender_name
+                        }
+                        state["queue"].append(entry)
+
+                        position = len(state["queue"]) + 1
+                        hold_templates = HOLD_MESSAGES.get(action, [])
+                        if hold_templates:
+                            hold_template = random.choice(hold_templates)
+                            hold_text = hold_template.format(
+                                callsign=callsign,
+                                runway=runway,
+                                position=position
+                            )
+                        else:
+                            hold_text = f"{callsign}, hold, traffic in sequence."
+
+                        hold_text = hold_text[0].upper() + hold_text[1:]
+                        return hold_text, sender_name
+
+                    # Runway free → mark active
+                    occupy = OCCUPANCY.get(action, 30)
+                    set_runway_active(
+                        state,
+                        {
+                            "airport": airport_code,
+                            "runway": runway,
+                            "callsign": callsign,
+                            "action": action,
+                            "frequency": channel,
+                            "sender": sender_name
+                        },
+                        occupy
+                    )
+
 
                 # --- Build response ---
                 if "{taxiway}" in template and "taxiways" in tower:
@@ -387,6 +472,54 @@ def fetch_messages():
 
     return jsonify(msgs)
 
+def runway_sequencer_loop():
+    while True:
+        if not SEQUENCING.get("auto_clear_next", False):
+            time.sleep(1)
+            continue
+
+        for airport, runways in RUNWAY_STATE.items():
+            for runway, state in runways.items():
+
+                # Expire active runway
+                if state["active"] and time.time() >= state["expires_at"]:
+                    clear_runway(state)
+
+                # Auto-clear next in queue
+                if not state["active"] and state["queue"]:
+                    entry = state["queue"].pop(0)
+
+                    occupy = OCCUPANCY.get(entry["action"], 30)
+                    set_runway_active(state, entry, occupy)
+
+                    templates = AUTO_CLEAR_RESPONSES.get(entry["action"], [])
+                    if templates:
+                        template = random.choice(templates)
+                        text = template.format(
+                            callsign=entry["callsign"],
+                            runway=entry["runway"],
+                            airport=entry["airport"]
+                        )
+                    else:
+                        text = f"{entry['callsign']}, cleared {entry['action']} runway {entry['runway']}."
+
+                    freq = entry["frequency"]
+                    channel = channels.get(freq)
+                    if channel:
+                        channel["messages"].append({
+                            "id": channel["next_id"],
+                            "text": text,
+                            "sender": entry["sender"]
+                        })
+                        channel["next_id"] += 1
+
+        time.sleep(1)
+
 
 if __name__ == "__main__":
+    threading.Thread(
+        target=runway_sequencer_loop,
+        daemon=True
+    ).start()
+
     app.run(host="0.0.0.0", port=10000)

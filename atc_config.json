@@ -57,6 +57,27 @@
     ]
   },
 
+  "sequencing": {
+    "enabled": true,
+    "auto_clear_next": true,
+
+    "occupancy_seconds": {
+      "landing": 60,
+      "takeoff": 30
+    },
+
+    "holds": {
+      "landing": [
+        "{callsign}, continue holding pattern, you are number {position}.",
+        "{callsign}, extend downwind, traffic ahead landing runway {runway}.",
+        "{callsign}, make right traffic, expect clearance shortly."
+      ],
+      "takeoff": [
+        "{callsign}, hold short runway {runway}, traffic in sequence.",
+        "{callsign}, hold short runway {runway}, you are number {position} for departure."
+      ]
+    }
+},
   
   "unknown": {
     "tower": [
@@ -77,8 +98,6 @@
     ]
   },
 
-
-
   "handoff_messages": {
     "ground_to_tower": [
       "contact {airport} Tower on {frequency} when ready for departure.",
@@ -92,6 +111,19 @@
     "landing": ["cleared to land runway {landings}", "approach approved, land runway {landings}"],
     "takeoff": ["cleared for takeoff runway {departures}", "you are cleared for departure runway {departures}"],
     "taxi": ["taxi to runway {departures} via taxiway {taxiway}","taxi via {taxiway} to runway {departures}"]
+  },
+
+  "auto_clear": {
+    "landing": [
+      "{callsign}, runway {runway} is now available, cleared to land.",
+      "{callsign}, you are now cleared to land runway {runway}.",
+      "{callsign}, continue approach, cleared to land runway {runway}."
+    ],
+    "takeoff": [
+      "{callsign}, runway {runway} is now available, cleared for takeoff.",
+      "{callsign}, you are now cleared for takeoff runway {runway}.",
+      "{callsign}, line up and cleared for takeoff runway {runway}."
+    ]
   },
 
   "trigger_phrases": {
