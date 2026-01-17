@@ -515,11 +515,17 @@ def runway_sequencer_loop():
 
         time.sleep(1)
 
+sequencer_started = False
+
+@app.before_first_request
+def start_runway_sequencer():
+    global sequencer_started
+    if not sequencer_started:
+        t = threading.Thread(target=runway_sequencer_loop, daemon=True)
+        t.start()
+        sequencer_started = True
+
+
 
 if __name__ == "__main__":
-    threading.Thread(
-        target=runway_sequencer_loop,
-        daemon=True
-    ).start()
-
     app.run(host="0.0.0.0", port=10000)
