@@ -118,6 +118,53 @@ def normalize_atc_message(message_text: str, sender_name: str):
     request_text = parts[2]
     return airport_code, callsign, request_text
 
+def process_runway_sequencing():
+    if not SEQUENCING.get("enabled", False):
+        return
+    if not SEQUENCING.get("auto_clear_next", False):
+        return
+
+    now = time.time()
+
+    for airport_code, runways in RUNWAY_STATE.items():
+        for runway, state in runways.items():
+
+            # Expire active runway
+            if state["active"] and now >= state["expires_at"]:
+                clear_runway(state)
+
+            # Auto-clear next
+            if not state["active"] and state["queue"]:
+                entry = state["queue"].pop(0)
+
+                occupy = OCCUPANCY.get(entry["action"], 30)
+                set_runway_active(state, entry, occupy)
+
+                templates = AUTO_CLEAR_RESPONSES.get(entry["action"], [])
+                if templates:
+                    template = random.choice(templates)
+                    text = template.format(
+                        callsign=entry["callsign"],
+                        runway=entry["runway"],
+                        airport=entry["airport"]
+                    )
+                else:
+                    # fallback
+                    if entry["action"] == "landing":
+                        text = f"{entry['callsign']}, cleared to land runway {entry['runway']}."
+                    else:
+                        text = f"{entry['callsign']}, cleared for takeoff runway {entry['runway']}."
+
+                freq = entry["frequency"]
+                ch = channels.get(freq)
+                if ch:
+                    ch["messages"].append({
+                        "id": ch["next_id"],
+                        "text": text[0].upper() + text[1:],
+                        "sender": entry["sender"],
+                    })
+                    ch["next_id"] += 1
+
 
 # ---------------------------
 # ATC Bot Logic
@@ -411,6 +458,7 @@ def get_state():
 @app.route("/send", methods=["POST"])
 def send_message():
     cleanup_expired_frequencies()
+    process_runway_sequencing()
 
     data = request.get_json(force=True)
 
@@ -456,6 +504,7 @@ def send_message():
 @app.route("/fetch", methods=["GET"])
 def fetch_messages():
     cleanup_expired_frequencies()
+    process_runway_sequencing()
 
     freq = int(request.args.get("frequency", 16))
     since_id = int(request.args.get("since_id", 0))
@@ -471,60 +520,6 @@ def fetch_messages():
     ]
 
     return jsonify(msgs)
-
-def runway_sequencer_loop():
-    while True:
-        if not SEQUENCING.get("auto_clear_next", False):
-            time.sleep(1)
-            continue
-
-        for airport, runways in RUNWAY_STATE.items():
-            for runway, state in runways.items():
-
-                # Expire active runway
-                if state["active"] and time.time() >= state["expires_at"]:
-                    clear_runway(state)
-
-                # Auto-clear next in queue
-                if not state["active"] and state["queue"]:
-                    entry = state["queue"].pop(0)
-
-                    occupy = OCCUPANCY.get(entry["action"], 30)
-                    set_runway_active(state, entry, occupy)
-
-                    templates = AUTO_CLEAR_RESPONSES.get(entry["action"], [])
-                    if templates:
-                        template = random.choice(templates)
-                        text = template.format(
-                            callsign=entry["callsign"],
-                            runway=entry["runway"],
-                            airport=entry["airport"]
-                        )
-                    else:
-                        text = f"{entry['callsign']}, cleared {entry['action']} runway {entry['runway']}."
-
-                    freq = entry["frequency"]
-                    channel = channels.get(freq)
-                    if channel:
-                        channel["messages"].append({
-                            "id": channel["next_id"],
-                            "text": text,
-                            "sender": entry["sender"]
-                        })
-                        channel["next_id"] += 1
-
-        time.sleep(1)
-
-sequencer_started = False
-
-@app.before_first_request
-def start_runway_sequencer():
-    global sequencer_started
-    if not sequencer_started:
-        t = threading.Thread(target=runway_sequencer_loop, daemon=True)
-        t.start()
-        sequencer_started = True
-
 
 
 if __name__ == "__main__":
