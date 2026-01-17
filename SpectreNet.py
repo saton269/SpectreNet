@@ -1,14 +1,20 @@
-from flask import Flask, request, jsonify # pyright: ignore[reportMissingImports]
+from flask import Flask, request, jsonify  # pyright: ignore[reportMissingImports]
 import time
 import json
 import random
-import threading
+import os
+from collections import deque
 
 
 app = Flask(__name__)
 
-# Load airports and triggers from JSON
-with open("atc_config.json", "r") as f:
+# ---------------------------
+# Config & constants
+# ---------------------------
+
+# Load airports and triggers from JSON (path-safe for Render / container)
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "atc_config.json")
+with open(CONFIG_PATH, "r") as f:
     atc_config = json.load(f)
 
 ATC_TOWERS = atc_config["airports"]
@@ -23,44 +29,68 @@ SEQUENCING = atc_config.get("sequencing", {})
 OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
 
-
-
 # Per-frequency storage
-channels = {}
+channels: dict[int, dict] = {}
 
-RUNWAY_STATE = {}
+# Runway state: RUNWAY_STATE[airport][runway] = { active, queue, expires_at }
+RUNWAY_STATE: dict[str, dict] = {}
 
 DEFAULT_FREQUENCY = 16
-
-
 MAX_MESSAGES = 100  # keep list small
 FREQUENCY_EXPIRE_SECONDS = 30 * 60  # 30 minutes
 
-def get_channel(freq):
+# Throttling for background-like work
+CLEANUP_INTERVAL = 60.0  # seconds between frequency map cleanups
+LAST_CLEANUP = 0.0
+
+RUNWAY_SWEEP_INTERVAL = 1.0  # seconds between runway sequencing sweeps
+LAST_RUNWAY_SWEEP = 0.0
+
+
+# ---------------------------
+# Helpers: frequencies / channels
+# ---------------------------
+
+def get_channel(freq: int) -> dict:
+    """Return (and create if needed) the channel structure for a frequency."""
     now = time.time()
 
     if freq not in channels:
         channels[freq] = {
             "next_id": 1,
-            "messages": [],
-            "last_active": now
+            "messages": deque(),  # use deque for O(1) pops from left
+            "last_active": now,
         }
 
-    channels[freq]["last_active"] = now
-    return channels[freq]
+    ch = channels[freq]
+    ch["last_active"] = now
+    return ch
 
-def cleanup_expired_frequencies():
+
+def maybe_cleanup_expired_frequencies() -> None:
+    """
+    Periodically clean up inactive frequencies.
+    Throttled so we don't scan the entire map on every request.
+    """
+    global LAST_CLEANUP
+
     now = time.time()
-    expired = []
+    if now - LAST_CLEANUP < CLEANUP_INTERVAL:
+        return
 
-    for freq, data in channels.items():
+    LAST_CLEANUP = now
+
+    expired = []
+    for freq, data in list(channels.items()):
         if now - data["last_active"] > FREQUENCY_EXPIRE_SECONDS:
             expired.append(freq)
 
     for freq in expired:
         del channels[freq]
 
-def format_freq(freq):
+
+def format_freq(freq: int) -> str:
+    """Format numeric frequency into 'XXX.XXX MHz' / 'CH N'."""
     if freq < 1000:
         return f"CH {freq}"
     mhz = freq // 1000
@@ -68,28 +98,41 @@ def format_freq(freq):
     khz_str = f"{khz:03d}"
     return f"{mhz}.{khz_str} MHz"
 
-def get_runway_state(airport, runway):
+
+# ---------------------------
+# Runway state helpers
+# ---------------------------
+
+def get_runway_state(airport: str, runway: str) -> dict:
     airport_state = RUNWAY_STATE.setdefault(airport, {})
     state = airport_state.get(runway)
     if not state:
         state = {
-            "active": None,          # dict or None
-            "queue": [],             # waiting aircraft
-            "expires_at": 0
+            "active": None,   # dict or None
+            "queue": [],      # waiting aircraft
+            "expires_at": 0.0,
         }
         airport_state[runway] = state
     return state
 
-def runway_active(state):
-    return state["active"] and time.time() < state["expires_at"]
 
-def set_runway_active(state, entry, seconds):
+def runway_active(state: dict) -> bool:
+    return bool(state["active"]) and time.time() < state["expires_at"]
+
+
+def set_runway_active(state: dict, entry: dict, seconds: float) -> None:
     state["active"] = entry
     state["expires_at"] = time.time() + seconds
 
-def clear_runway(state):
+
+def clear_runway(state: dict) -> None:
     state["active"] = None
-    state["expires_at"] = 0
+    state["expires_at"] = 0.0
+
+
+# ---------------------------
+# ATC helpers
+# ---------------------------
 
 def normalize_atc_message(message_text: str, sender_name: str):
     """
@@ -118,17 +161,26 @@ def normalize_atc_message(message_text: str, sender_name: str):
     request_text = parts[2]
     return airport_code, callsign, request_text
 
-def process_runway_sequencing():
+
+def process_runway_sequencing() -> None:
+    """
+    Auto-clear next aircraft in queue when runway occupancy expires.
+    Throttled so we don't walk all runway state on every request.
+    """
     if not SEQUENCING.get("enabled", False):
         return
     if not SEQUENCING.get("auto_clear_next", False):
         return
 
+    global LAST_RUNWAY_SWEEP
     now = time.time()
+    if now - LAST_RUNWAY_SWEEP < RUNWAY_SWEEP_INTERVAL:
+        return
+
+    LAST_RUNWAY_SWEEP = now
 
     for airport_code, runways in RUNWAY_STATE.items():
         for runway, state in runways.items():
-
             # Expire active runway
             if state["active"] and now >= state["expires_at"]:
                 clear_runway(state)
@@ -146,7 +198,7 @@ def process_runway_sequencing():
                     text = template.format(
                         callsign=entry["callsign"],
                         runway=entry["runway"],
-                        airport=entry["airport"]
+                        airport=entry["airport"],
                     )
                 else:
                     # fallback
@@ -158,9 +210,11 @@ def process_runway_sequencing():
                 freq = entry["frequency"]
                 ch = channels.get(freq)
                 if ch:
+                    # Uppercase first letter for consistency
+                    text = text[0].upper() + text[1:]
                     ch["messages"].append({
                         "id": ch["next_id"],
-                        "text": text[0].upper() + text[1:],
+                        "text": text,
                         "sender": entry["sender"],
                     })
                     ch["next_id"] += 1
@@ -169,14 +223,14 @@ def process_runway_sequencing():
 # ---------------------------
 # ATC Bot Logic
 # ---------------------------
-def handle_atc(message_text, channel, sender_name):
+
+def handle_atc(message_text: str, channel: int, sender_name: str):
     """
     Process ATC bot responses.
     Message format: AIRPORT_CODE, CALLSIGN, request ...
     """
 
-    # --- Parse message ---
-        # --- Parse & normalize (fills callsign if user omitted it) ---
+    # --- Parse & normalize (fills callsign if user omitted it) ---
     airport_code, callsign, request_text = normalize_atc_message(
         message_text,
         sender_name,
@@ -186,7 +240,6 @@ def handle_atc(message_text, channel, sender_name):
         return None
 
     request_text = request_text.lower()
-
 
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
@@ -227,7 +280,7 @@ def handle_atc(message_text, channel, sender_name):
             text = template.format(
                 callsign=callsign,
                 airport=airport_code,
-                frequency=format_freq(ground_freq)
+                frequency=format_freq(ground_freq),
             )
             text = text[0].upper() + text[1:]
 
@@ -250,7 +303,7 @@ def handle_atc(message_text, channel, sender_name):
             text = template.format(
                 callsign=callsign,
                 airport=airport_code,
-                frequency=format_freq(tower_freq)
+                frequency=format_freq(tower_freq),
             )
             text = text[0].upper() + text[1:]
 
@@ -261,7 +314,6 @@ def handle_atc(message_text, channel, sender_name):
 
     # =========================================================
     # 2) If the tuned frequency doesn't belong to this airport, ignore
-    #    (For single-frequency airports, tower_freq == ground_freq)
     # =========================================================
     if channel not in (tower_freq, ground_freq):
         return None
@@ -316,7 +368,7 @@ def handle_atc(message_text, channel, sender_name):
                             "callsign": callsign,
                             "action": action,
                             "frequency": channel,
-                            "sender": sender_name
+                            "sender": sender_name,
                         }
                         state["queue"].append(entry)
 
@@ -327,7 +379,7 @@ def handle_atc(message_text, channel, sender_name):
                             hold_text = hold_template.format(
                                 callsign=callsign,
                                 runway=runway,
-                                position=position
+                                position=position,
                             )
                         else:
                             hold_text = f"{callsign}, hold, traffic in sequence."
@@ -345,11 +397,10 @@ def handle_atc(message_text, channel, sender_name):
                             "callsign": callsign,
                             "action": action,
                             "frequency": channel,
-                            "sender": sender_name
+                            "sender": sender_name,
                         },
-                        occupy
+                        occupy,
                     )
-
 
                 # --- Build response ---
                 if "{taxiway}" in template and "taxiways" in tower:
@@ -357,12 +408,12 @@ def handle_atc(message_text, channel, sender_name):
                     response_text = template.format(
                         landings=runway,
                         departures=runway,
-                        taxiway=taxiway
+                        taxiway=taxiway,
                     )
                 else:
                     response_text = template.format(
                         landings=runway,
-                        departures=runway
+                        departures=runway,
                     )
 
                 # --- Ground → Tower handoff (only when actually on Ground) ---
@@ -375,7 +426,7 @@ def handle_atc(message_text, channel, sender_name):
                                 formatted_freq = format_freq(tower_freq)
                                 handoff_text = handoff_template.format(
                                     airport=airport_code,
-                                    frequency=formatted_freq
+                                    frequency=formatted_freq,
                                 )
                                 response_text = f"{response_text}, {handoff_text}"
 
@@ -393,7 +444,7 @@ def handle_atc(message_text, channel, sender_name):
         template = random.choice(templates)
         unknown_text = template.format(
             callsign=callsign,
-            airport=airport_code
+            airport=airport_code,
         )
         unknown_text = unknown_text[0].upper() + unknown_text[1:]
 
@@ -403,14 +454,18 @@ def handle_atc(message_text, channel, sender_name):
     return None
 
 
+# ---------------------------
+# Routes
+# ---------------------------
 
 @app.route("/")
 def index():
-    cleanup_expired_frequencies()
+    maybe_cleanup_expired_frequencies()
     return jsonify({
         "status": "online",
-        "active_frequencies": len(channels)
+        "active_frequencies": len(channels),
     })
+
 
 @app.route("/atc/lookup", methods=["GET"])
 def atc_lookup():
@@ -432,37 +487,38 @@ def atc_lookup():
     return jsonify({
         "airport": airport,
         "frequency": freq,
-        "sender": sender
+        "sender": sender,
     })
+
 
 @app.route("/state", methods=["GET"])
 def get_state():
-    cleanup_expired_frequencies()
+    maybe_cleanup_expired_frequencies()
 
-    freq = int(request.args.get("frequency", 16))
+    freq = int(request.args.get("frequency", DEFAULT_FREQUENCY))
 
     if freq not in channels:
         return jsonify({
             "frequency": freq,
-            "last_id": 0
+            "last_id": 0,
         })
 
     channel = channels[freq]
 
     return jsonify({
         "frequency": freq,
-        "last_id": channel["next_id"] - 1
+        "last_id": channel["next_id"] - 1,
     })
 
 
 @app.route("/send", methods=["POST"])
 def send_message():
-    cleanup_expired_frequencies()
+    maybe_cleanup_expired_frequencies()
     process_runway_sequencing()
 
     data = request.get_json(force=True)
 
-    freq = int(data.get("frequency", 16))
+    freq = int(data.get("frequency", DEFAULT_FREQUENCY))
     text = data.get("text", "").strip()
     sender = data.get("sender", "UNKNOWN")
 
@@ -470,14 +526,15 @@ def send_message():
         return jsonify({"error": "empty message"}), 400
 
     channel = get_channel(freq)
+    messages = channel["messages"]
 
     msg = {
         "id": channel["next_id"],
         "text": text,
-        "sender": sender
+        "sender": sender,
     }
 
-    channel["messages"].append(msg)
+    messages.append(msg)
     channel["next_id"] += 1
 
     atc_response = handle_atc(text, freq, sender)
@@ -486,41 +543,40 @@ def send_message():
         atc_msg = {
             "id": channel["next_id"],
             "text": atc_text,
-            "sender": atc_sender
+            "sender": atc_sender,
         }
-        channel["messages"].append(atc_msg)
+        messages.append(atc_msg)
         channel["next_id"] += 1
 
     # message cap
-    if len(channel["messages"]) > MAX_MESSAGES:
-        channel["messages"].pop(0)
+    if len(messages) > MAX_MESSAGES:
+        messages.popleft()
 
     return jsonify({
         "status": "sent",
-        "id": msg["id"]
+        "id": msg["id"],
     })
 
 
 @app.route("/fetch", methods=["GET"])
 def fetch_messages():
-    cleanup_expired_frequencies()
+    maybe_cleanup_expired_frequencies()
     process_runway_sequencing()
 
-    freq = int(request.args.get("frequency", 16))
+    freq = int(request.args.get("frequency", DEFAULT_FREQUENCY))
     since_id = int(request.args.get("since_id", 0))
 
     if freq not in channels:
         return jsonify([])
 
     channel = get_channel(freq)
+    messages = channel["messages"]
 
-    msgs = [
-        m for m in channel["messages"]
-        if m["id"] > since_id
-    ]
+    msgs = [m for m in messages if m["id"] > since_id]
 
     return jsonify(msgs)
 
 
 if __name__ == "__main__":
+    # For Render you'll usually run via gunicorn, but this is fine for local dev:
     app.run(host="0.0.0.0", port=10000)

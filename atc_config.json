@@ -39,6 +39,16 @@
       "landings": ["14"],
       "departures": ["32"],
       "taxiways": ["Main"]
+    },
+    "SLKA": {
+      "name": "Knapper Airport",
+      "sender": "SLKA ATC",
+      "frequency": 119200,
+      "tower_frequency": 128075, 
+      "ground_frequency": 121650, 
+      "landings": ["10"],
+      "departures": ["10"],
+      "taxiways": ["Main"]
     }
   },
 
