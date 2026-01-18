@@ -230,7 +230,7 @@ def format_weather_report(icao: str) -> str | None:
 
     return (
         f"{icao} weather: winds {state['wind_dir']:03.0f} at {state['wind_speed']} knots, "
-        f"visibility {vis}, {desc}, temperature {state['temp']}°C, "
+        f"visibility {vis}, {desc}, temperature {state['temp']}C, "
         f"QNH {state['qnh']}, flight conditions {style}."
     )
 
