@@ -187,31 +187,30 @@ def update_zone_weather(state: dict):
 def get_weather_for_airport(icao: str) -> dict | None:
     """
     Return current weather state for an airport's zone.
-    Lazily initializes the zone if needed.
+    Uses ATC_TOWERS["airports"] as the source of truth.
+    Lazily initializes zone weather if missing.
     """
     icao = icao.upper()
 
-    # Use your ATC_TOWERS dict (good!)
-    ap = ATC_TOWERS.get(icao)
+    airports = ATC_TOWERS.get("airports", {})
+    ap = airports.get(icao)
     if not ap:
         # Truly unknown airport
         return None
 
-    # Get zone from config, or default to ICAO-based zone
+    # Get zone from config or default to ICAO
     zone = ap.get("weather_zone")
     if not zone:
         zone = icao
-        ap["weather_zone"] = zone  # store it back so it's consistent
+        ap["weather_zone"] = zone
 
-    # If this zone doesn't have weather yet, create it now
+    # Lazy init weather state
     if zone not in WEATHER_STATE:
         WEATHER_STATE[zone] = make_initial_weather_state(zone)
 
     state = WEATHER_STATE[zone]
     state["zone"] = zone
     return state
-
-
 
 def format_weather_report(icao: str) -> str | None:
     """
