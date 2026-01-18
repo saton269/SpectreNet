@@ -54,6 +54,8 @@ RUNWAY_STATE = {}
 DEFAULT_FREQUENCY = 16
 
 
+
+
 MAX_MESSAGES = 100  # keep list small
 FREQUENCY_EXPIRE_SECONDS = 30 * 60  # 30 minutes
 
@@ -184,16 +186,31 @@ def update_zone_weather(state: dict):
 
 def get_weather_for_airport(icao: str) -> dict | None:
     """
-    Return the current weather state dict for the airport's zone,
-    or None if the airport is unknown.
+    Return current weather state for an airport's zone.
+    Lazily initializes the zone if needed.
     """
     icao = icao.upper()
+
+    # Use your ATC_TOWERS dict (good!)
     ap = ATC_TOWERS.get(icao)
     if not ap:
+        # Truly unknown airport
         return None
 
-    zone = ap.get("weather_zone", icao)
-    return WEATHER_STATE.get(zone)
+    # Get zone from config, or default to ICAO-based zone
+    zone = ap.get("weather_zone")
+    if not zone:
+        zone = icao
+        ap["weather_zone"] = zone  # store it back so it's consistent
+
+    # If this zone doesn't have weather yet, create it now
+    if zone not in WEATHER_STATE:
+        WEATHER_STATE[zone] = make_initial_weather_state(zone)
+
+    state = WEATHER_STATE[zone]
+    state["zone"] = zone
+    return state
+
 
 
 def format_weather_report(icao: str) -> str | None:
