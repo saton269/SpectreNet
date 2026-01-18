@@ -187,13 +187,12 @@ def update_zone_weather(state: dict):
 def get_weather_for_airport(icao: str) -> dict | None:
     """
     Return current weather state for an airport's zone.
-    Uses ATC_TOWERS["airports"] as the source of truth.
+    Uses ATC_TOWERS as the source of truth (flat dict: ICAO -> config).
     Lazily initializes zone weather if missing.
     """
     icao = icao.upper()
 
-    airports = ATC_TOWERS.get("airports", {})
-    ap = airports.get(icao)
+    ap = ATC_TOWERS.get(icao)
     if not ap:
         # Truly unknown airport
         return None
@@ -211,6 +210,7 @@ def get_weather_for_airport(icao: str) -> dict | None:
     state = WEATHER_STATE[zone]
     state["zone"] = zone
     return state
+
 
 def format_weather_report(icao: str) -> str | None:
     """
@@ -242,31 +242,6 @@ def update_all_weather():
     for zone_name, state in WEATHER_STATE.items():
         if now - state.get("last_update", 0) >= WEATHER_UPDATE_INTERVAL:
             update_zone_weather(state)
-
-def get_weather_for_airport(icao: str) -> dict | None:
-    ap = ATC_TOWERS.get(icao.upper())
-    if not ap:
-        return None
-    zone = ap.get("weather_zone", icao.upper())
-    return WEATHER_STATE.get(zone)
-
-def format_weather_report(icao: str) -> str | None:
-    icao = icao.upper()
-    state = get_weather_for_airport(icao)
-    if not state:
-        return None
-
-    cond = state["condition"]
-    cond_cfg = CONDITION_CONFIGS.get(cond, {})
-    desc = cond_cfg.get("description", cond.lower())
-    vis  = state.get("visibility", "GOOD").lower()
-    style = state.get("style", "VFR")
-
-    return (
-        f"{icao} weather: winds {state['wind_dir']:03.0f} at {state['wind_speed']} knots, "
-        f"visibility {vis}, {desc}, temperature {state['temp']}°C, "
-        f"QNH {state['qnh']}, flight conditions {style}."
-    )
 
 
 def cleanup_expired_frequencies():
