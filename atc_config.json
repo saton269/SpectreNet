@@ -14,7 +14,7 @@
       "name": "Hollywood Airport",
       "sender": "SLHA ATC",
       "frequency": 119200,
-      "tower_frequency": 119200, 
+      "tower_frequency": 120925, 
       "ground_frequency": 121800, 
       "landings": ["36L"],
       "departures": ["18L"],
@@ -38,7 +38,7 @@
       "name": "Second Norway Lufthavn",
       "sender": "SLSN ATC",
       "frequency": 119200,
-      "tower_frequency": 119200, 
+      "tower_frequency": 122800, 
       "ground_frequency": 121925, 
       "landings": ["09R"],
       "departures": ["27R"],
@@ -62,7 +62,7 @@
       "name": "Juneau Regional",
       "sender": "SLJA ATC",
       "frequency": 119200,
-      "tower_frequency": 121900, 
+      "tower_frequency": 121100, 
       "ground_frequency": 121900, 
       "landings": ["14"],
       "departures": ["32"],
@@ -74,7 +74,7 @@
         "landing_ends": ["14"],
         "takeoff_ends": ["32"]
       }
-  ]
+      ]
     },
     "SLKA": {
       "name": "Knapper Airport",
@@ -91,6 +91,60 @@
         "physical_id": "RWY_MAIN",      
         "landing_ends": ["10"],
         "takeoff_ends": ["28"]
+      }
+      ]
+    },
+    "SLSV": {
+      "name": "Stormville Airfield",
+      "sender": "SLSV ATC",
+      "frequency": 119200,
+      "tower_frequency": 127375, 
+      "ground_frequency": 121625, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLFJ": {
+      "name": "FjellMark Field",
+      "sender": "SLFJ ATC",
+      "frequency": 119200,
+      "tower_frequency": 120025, 
+      "ground_frequency": 121700, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLTO": {
+      "name": "Toka Airfield",
+      "sender": "SLTO ATC",
+      "frequency": 119200,
+      "tower_frequency": 128800, 
+      "ground_frequency": 121750, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
       }
       ]
     }

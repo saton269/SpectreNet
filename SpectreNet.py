@@ -11,6 +11,17 @@ app = Flask(__name__)
 with open("atc_config.json", "r") as f:
     atc_config = json.load(f)
 
+with open("channels.json") as f:
+    CHANNELS_CONFIG = json.load(f)["channels"]
+
+CHANNELS_BY_FREQ = {}
+for channel_id, cfg in CHANNELS_CONFIG.items():
+    freq = cfg["frequency"]
+    CHANNELS_BY_FREQ[freq] = {
+        "id": channel_id,
+        **cfg
+    }
+
 ATC_TOWERS = atc_config["airports"]
 ATC_RESPONSES = atc_config["responses"]
 TRIGGER_PHRASES = atc_config["trigger_phrases"]
@@ -48,6 +59,30 @@ def get_channel(freq):
 
     channels[freq]["last_active"] = now
     return channels[freq]
+
+def can_transmit_on_frequency(freq, sender_uuid):
+    channel = CHANNELS_BY_FREQ.get(freq)
+    if not channel:
+        # Not a dedicated channel – treat as normal ATC / regular freq
+        return True
+
+    policy = channel.get("tx_policy", {})
+    mode = policy.get("mode", "open")
+
+    if mode == "open":
+        return True
+
+    if mode == "server_only":
+        # Only internal/server-injected messages allowed
+        return False
+
+    if mode == "whitelist_uuid":
+        allowed = set(policy.get("allowed_uuids", []))
+        return sender_uuid in allowed
+
+    # Future: other modes, but default to no if unknown
+    return False
+
 
 def cleanup_expired_frequencies():
     now = time.time()
@@ -91,57 +126,61 @@ def clear_runway(state):
     state["active"] = None
     state["expires_at"] = 0
 
-def choose_runway_for_action(tower_cfg: dict, action: str) -> tuple[str, str]:
+def choose_runway_for_action(tower_cfg, action):
     """
-    Select a logical runway (by physical_id/id) and a runway end string
-    for the given action ("landing" or "takeoff").
+    Select a runway and end for the given action ("landing" or "takeoff").
 
     Returns:
         (logical_runway_key, runway_end)
 
-    logical_runway_key is what we use for RUNWAY_STATE (sequencing),
-    runway_end is what we say in phraseology ("runway 36R").
+    logical_runway_key: what we use for RUNWAY_STATE (sequencing)
+    runway_end: the textual end we speak in phraseology ("36L", "18L")
+
+    Rules:
+    - If using new-style 'runways' config:
+        * For landing -> only consider runways with non-empty 'landing_ends'
+        * For takeoff -> only consider runways with non-empty 'takeoff_ends'
+        * First matching runway wins (deterministic, no random choice)
+    - If no 'runways' block exists, fall back to old 'landings' / 'departures'.
     """
 
     runways_cfg = tower_cfg.get("runways") or []
 
-    # New-style config: runways is a list of dicts
+    # --- New-style config: list of runway dicts ---
     if runways_cfg and isinstance(runways_cfg[0], dict):
-        candidates = []
-
         for rwy in runways_cfg:
-            if action == "landing" and rwy.get("landing_ends"):
-                candidates.append(rwy)
-            elif action == "takeoff" and rwy.get("takeoff_ends"):
-                candidates.append(rwy)
-
-        if candidates:
-            rwy = random.choice(candidates)
-
             if action == "landing":
                 ends = rwy.get("landing_ends") or []
-            else:
+            elif action == "takeoff":
                 ends = rwy.get("takeoff_ends") or []
+            else:
+                ends = []
 
-            runway_end = random.choice(ends) if ends else ""
+            # This runway does NOT handle this operation at all
+            if not ends:
+                continue
 
-            # physical_id groups opposite ends as one physical runway.
-            logical_id = rwy.get("physical_id") or rwy["id"]
+            # This runway is valid for this operation -> use it
+            runway_end = ends[0]  # first defined end; deterministic
+            logical_id = rwy.get("physical_id") or rwy.get("id") or runway_end
             return logical_id, runway_end
 
-    # Fallback: old-style config using landings/departures arrays (strings)
+    # --- Fallback: old-style config using plain lists ---
     if action == "landing":
         choices = tower_cfg.get("landings") or tower_cfg.get("runways", [])
-    else:  # "takeoff"
+    elif action == "takeoff":
         choices = tower_cfg.get("departures") or tower_cfg.get("runways", [])
+    else:
+        choices = tower_cfg.get("runways", [])
 
     if not choices:
         return "DEFAULT", ""
 
-    runway_end = random.choice(choices)
-    # Treat this end as its own logical runway (old behaviour)
+    # Old behaviour: first runway in the list
+    runway_end = choices[0]
     logical_id = runway_end
     return logical_id, runway_end
+
 
 
 def normalize_atc_message(message_text: str, sender_name: str):
@@ -337,24 +376,25 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 template = random.choice(ATC_RESPONSES[action])
 
                 # --------------------------------------------------
-                # Runway selection (new logic)
+                # Runway selection (now using JSON runway config)
                 # --------------------------------------------------
                 logical_runway_id = None
-                runway_for_phrase = ""
+                runway = ""
 
                 if action in ("landing", "takeoff"):
-                    # Uses new JSON structure if present; falls back to landings/departures otherwise
-                    logical_runway_id, runway_for_phrase = choose_runway_for_action(
-                        tower, action
-                    )
+                    # Uses new runways[] config if present; falls back to
+                    # landings/departures lists otherwise.
+                    logical_runway_id, runway = choose_runway_for_action(tower, action)
+
                 elif action == "taxi":
-                    # Taxi is not sequenced; we just need a runway name for templates
+                    # Taxi is not sequenced; we just want a reasonable runway
                     base_choices = (
                         tower.get("departures")
                         or tower.get("landings")
                         or tower.get("runways", [])
                     )
-                    runway_for_phrase = random.choice(base_choices) if base_choices else ""
+                    runway = base_choices[0] if base_choices else ""
+
                 else:
                     # Other actions (non-runway-specific)
                     base_choices = (
@@ -363,7 +403,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         or tower.get("departures")
                         or []
                     )
-                    runway_for_phrase = random.choice(base_choices) if base_choices else ""
+                    runway = base_choices[0] if base_choices else ""
 
                 # --------------------------------------------------
                 # Runway sequencing (landing / takeoff only)
@@ -373,15 +413,16 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     and role == "tower"
                     and action in ("landing", "takeoff")
                 ):
-                    # Group by physical runway when using new config; by end string otherwise
-                    runway_key = logical_runway_id or runway_for_phrase or "DEFAULT"
+                    # Group by physical runway when using new config;
+                    # fall back to using the runway end string otherwise.
+                    runway_key = logical_runway_id or runway or "DEFAULT"
                     state = get_runway_state(airport_code, runway_key)
 
                     # Runway currently occupied → HOLD and queue
                     if runway_active(state):
                         entry = {
                             "airport": airport_code,
-                            "runway": runway_for_phrase,  # end used in messages
+                            "runway": runway,    # end used in messages
                             "callsign": callsign,
                             "action": action,
                             "frequency": channel,
@@ -395,7 +436,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                             hold_template = random.choice(hold_templates)
                             hold_text = hold_template.format(
                                 callsign=callsign,
-                                runway=runway_for_phrase,
+                                runway=runway,
                                 position=position,
                             )
                         else:
@@ -410,7 +451,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         state,
                         {
                             "airport": airport_code,
-                            "runway": runway_for_phrase,
+                            "runway": runway,
                             "callsign": callsign,
                             "action": action,
                             "frequency": channel,
@@ -423,14 +464,14 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 if "{taxiway}" in template and "taxiways" in tower:
                     taxiway = random.choice(tower["taxiways"])
                     response_text = template.format(
-                        landings=runway_for_phrase,
-                        departures=runway_for_phrase,
+                        landings=runway,
+                        departures=runway,
                         taxiway=taxiway,
                     )
                 else:
                     response_text = template.format(
-                        landings=runway_for_phrase,
-                        departures=runway_for_phrase,
+                        landings=runway,
+                        departures=runway,
                     )
 
                 # --- Ground → Tower handoff (only when actually on Ground) ---
@@ -532,9 +573,18 @@ def send_message():
     freq = int(data.get("frequency", 16))
     text = data.get("text", "").strip()
     sender = data.get("sender", "UNKNOWN")
+    sender_uuid = data.get("sender_uuid")
 
     if not text:
         return jsonify({"error": "empty message"}), 400
+    
+     # --- Dedicated-channel TX permission check (GNN, etc.) ---
+    if not can_transmit_on_frequency(freq, sender_uuid):
+        return jsonify({
+            "status": "blocked",
+            "error": "TX_NOT_ALLOWED",
+            "reason": "CHANNEL_RECV_ONLY"
+        }), 403
 
     channel = get_channel(freq)
 

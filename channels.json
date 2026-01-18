@@ -1,0 +1,17 @@
+{
+  "channels": {
+    "GNN_NEWS_84": {
+      "name": "Grid News Network",
+      "frequency": 84,
+      "description": "Grid-wide news broadcast channel. Receive-only for normal users.",
+      "sender": "Grid News Network",
+      "tx_policy": {
+        "mode": "whitelist_uuid",
+        "allowed_uuids": [
+          "58de931a-d105-49ef-b549-12c7ab3ffe46",
+          "c7a2fb35-bb5e-4edc-9d4c-c0179a196248"
+        ]
+      }
+    }
+  }
+}
