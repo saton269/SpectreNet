@@ -1,20 +1,14 @@
-from flask import Flask, request, jsonify  # pyright: ignore[reportMissingImports]
+from flask import Flask, request, jsonify # pyright: ignore[reportMissingImports]
 import time
 import json
 import random
-import os
 from collections import deque
 
 
 app = Flask(__name__)
 
-# ---------------------------
-# Config & constants
-# ---------------------------
-
-# Load airports and triggers from JSON (path-safe for Render / container)
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "atc_config.json")
-with open(CONFIG_PATH, "r") as f:
+# Load airports and triggers from JSON
+with open("atc_config.json", "r") as f:
     atc_config = json.load(f)
 
 ATC_TOWERS = atc_config["airports"]
@@ -29,68 +23,44 @@ SEQUENCING = atc_config.get("sequencing", {})
 OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
 
-# Per-frequency storage
-channels: dict[int, dict] = {}
 
-# Runway state: RUNWAY_STATE[airport][runway] = { active, queue, expires_at }
-RUNWAY_STATE: dict[str, dict] = {}
+
+# Per-frequency storage
+channels = {}
+
+RUNWAY_STATE = {}
 
 DEFAULT_FREQUENCY = 16
+
+
 MAX_MESSAGES = 100  # keep list small
 FREQUENCY_EXPIRE_SECONDS = 30 * 60  # 30 minutes
 
-# Throttling for background-like work
-CLEANUP_INTERVAL = 60.0  # seconds between frequency map cleanups
-LAST_CLEANUP = 0.0
-
-RUNWAY_SWEEP_INTERVAL = 1.0  # seconds between runway sequencing sweeps
-LAST_RUNWAY_SWEEP = 0.0
-
-
-# ---------------------------
-# Helpers: frequencies / channels
-# ---------------------------
-
-def get_channel(freq: int) -> dict:
-    """Return (and create if needed) the channel structure for a frequency."""
+def get_channel(freq):
     now = time.time()
 
     if freq not in channels:
         channels[freq] = {
             "next_id": 1,
-            "messages": deque(),  # use deque for O(1) pops from left
-            "last_active": now,
+            "messages": [],
+            "last_active": now
         }
 
-    ch = channels[freq]
-    ch["last_active"] = now
-    return ch
+    channels[freq]["last_active"] = now
+    return channels[freq]
 
-
-def maybe_cleanup_expired_frequencies() -> None:
-    """
-    Periodically clean up inactive frequencies.
-    Throttled so we don't scan the entire map on every request.
-    """
-    global LAST_CLEANUP
-
+def cleanup_expired_frequencies():
     now = time.time()
-    if now - LAST_CLEANUP < CLEANUP_INTERVAL:
-        return
-
-    LAST_CLEANUP = now
-
     expired = []
-    for freq, data in list(channels.items()):
+
+    for freq, data in channels.items():
         if now - data["last_active"] > FREQUENCY_EXPIRE_SECONDS:
             expired.append(freq)
 
     for freq in expired:
         del channels[freq]
 
-
-def format_freq(freq: int) -> str:
-    """Format numeric frequency into 'XXX.XXX MHz' / 'CH N'."""
+def format_freq(freq):
     if freq < 1000:
         return f"CH {freq}"
     mhz = freq // 1000
@@ -98,41 +68,81 @@ def format_freq(freq: int) -> str:
     khz_str = f"{khz:03d}"
     return f"{mhz}.{khz_str} MHz"
 
-
-# ---------------------------
-# Runway state helpers
-# ---------------------------
-
-def get_runway_state(airport: str, runway: str) -> dict:
+def get_runway_state(airport, runway):
     airport_state = RUNWAY_STATE.setdefault(airport, {})
     state = airport_state.get(runway)
     if not state:
         state = {
-            "active": None,   # dict or None
-            "queue": [],      # waiting aircraft
-            "expires_at": 0.0,
+            "active": None,          # dict or None
+            "queue": [],             # waiting aircraft
+            "expires_at": 0
         }
         airport_state[runway] = state
     return state
 
+def runway_active(state):
+    return state["active"] and time.time() < state["expires_at"]
 
-def runway_active(state: dict) -> bool:
-    return bool(state["active"]) and time.time() < state["expires_at"]
-
-
-def set_runway_active(state: dict, entry: dict, seconds: float) -> None:
+def set_runway_active(state, entry, seconds):
     state["active"] = entry
     state["expires_at"] = time.time() + seconds
 
-
-def clear_runway(state: dict) -> None:
+def clear_runway(state):
     state["active"] = None
-    state["expires_at"] = 0.0
+    state["expires_at"] = 0
 
+def choose_runway_for_action(tower_cfg: dict, action: str) -> tuple[str, str]:
+    """
+    Select a logical runway (by physical_id/id) and a runway end string
+    for the given action ("landing" or "takeoff").
 
-# ---------------------------
-# ATC helpers
-# ---------------------------
+    Returns:
+        (logical_runway_key, runway_end)
+
+    logical_runway_key is what we use for RUNWAY_STATE (sequencing),
+    runway_end is what we say in phraseology ("runway 36R").
+    """
+
+    runways_cfg = tower_cfg.get("runways") or []
+
+    # New-style config: runways is a list of dicts
+    if runways_cfg and isinstance(runways_cfg[0], dict):
+        candidates = []
+
+        for rwy in runways_cfg:
+            if action == "landing" and rwy.get("landing_ends"):
+                candidates.append(rwy)
+            elif action == "takeoff" and rwy.get("takeoff_ends"):
+                candidates.append(rwy)
+
+        if candidates:
+            rwy = random.choice(candidates)
+
+            if action == "landing":
+                ends = rwy.get("landing_ends") or []
+            else:
+                ends = rwy.get("takeoff_ends") or []
+
+            runway_end = random.choice(ends) if ends else ""
+
+            # physical_id groups opposite ends as one physical runway.
+            logical_id = rwy.get("physical_id") or rwy["id"]
+            return logical_id, runway_end
+
+    # Fallback: old-style config using landings/departures arrays (strings)
+    if action == "landing":
+        choices = tower_cfg.get("landings") or tower_cfg.get("runways", [])
+    else:  # "takeoff"
+        choices = tower_cfg.get("departures") or tower_cfg.get("runways", [])
+
+    if not choices:
+        return "DEFAULT", ""
+
+    runway_end = random.choice(choices)
+    # Treat this end as its own logical runway (old behaviour)
+    logical_id = runway_end
+    return logical_id, runway_end
+
 
 def normalize_atc_message(message_text: str, sender_name: str):
     """
@@ -161,26 +171,17 @@ def normalize_atc_message(message_text: str, sender_name: str):
     request_text = parts[2]
     return airport_code, callsign, request_text
 
-
-def process_runway_sequencing() -> None:
-    """
-    Auto-clear next aircraft in queue when runway occupancy expires.
-    Throttled so we don't walk all runway state on every request.
-    """
+def process_runway_sequencing():
     if not SEQUENCING.get("enabled", False):
         return
     if not SEQUENCING.get("auto_clear_next", False):
         return
 
-    global LAST_RUNWAY_SWEEP
     now = time.time()
-    if now - LAST_RUNWAY_SWEEP < RUNWAY_SWEEP_INTERVAL:
-        return
-
-    LAST_RUNWAY_SWEEP = now
 
     for airport_code, runways in RUNWAY_STATE.items():
         for runway, state in runways.items():
+
             # Expire active runway
             if state["active"] and now >= state["expires_at"]:
                 clear_runway(state)
@@ -198,7 +199,7 @@ def process_runway_sequencing() -> None:
                     text = template.format(
                         callsign=entry["callsign"],
                         runway=entry["runway"],
-                        airport=entry["airport"],
+                        airport=entry["airport"]
                     )
                 else:
                     # fallback
@@ -210,11 +211,9 @@ def process_runway_sequencing() -> None:
                 freq = entry["frequency"]
                 ch = channels.get(freq)
                 if ch:
-                    # Uppercase first letter for consistency
-                    text = text[0].upper() + text[1:]
                     ch["messages"].append({
                         "id": ch["next_id"],
-                        "text": text,
+                        "text": text[0].upper() + text[1:],
                         "sender": entry["sender"],
                     })
                     ch["next_id"] += 1
@@ -223,7 +222,6 @@ def process_runway_sequencing() -> None:
 # ---------------------------
 # ATC Bot Logic
 # ---------------------------
-
 def handle_atc(message_text: str, channel: int, sender_name: str):
     """
     Process ATC bot responses.
@@ -338,17 +336,34 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
                 template = random.choice(ATC_RESPONSES[action])
 
-                # --- Runway selection ---
-                if action == "landing":
-                    runway = random.choice(
-                        tower.get("landings", tower.get("runways", []))
+                # --------------------------------------------------
+                # Runway selection (new logic)
+                # --------------------------------------------------
+                logical_runway_id = None
+                runway_for_phrase = ""
+
+                if action in ("landing", "takeoff"):
+                    # Uses new JSON structure if present; falls back to landings/departures otherwise
+                    logical_runway_id, runway_for_phrase = choose_runway_for_action(
+                        tower, action
                     )
-                elif action in ("takeoff", "taxi"):
-                    runway = random.choice(
-                        tower.get("departures", tower.get("runways", []))
+                elif action == "taxi":
+                    # Taxi is not sequenced; we just need a runway name for templates
+                    base_choices = (
+                        tower.get("departures")
+                        or tower.get("landings")
+                        or tower.get("runways", [])
                     )
+                    runway_for_phrase = random.choice(base_choices) if base_choices else ""
                 else:
-                    runway = random.choice(tower.get("runways", []))
+                    # Other actions (non-runway-specific)
+                    base_choices = (
+                        tower.get("runways")
+                        or tower.get("landings")
+                        or tower.get("departures")
+                        or []
+                    )
+                    runway_for_phrase = random.choice(base_choices) if base_choices else ""
 
                 # --------------------------------------------------
                 # Runway sequencing (landing / takeoff only)
@@ -358,13 +373,15 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     and role == "tower"
                     and action in ("landing", "takeoff")
                 ):
-                    state = get_runway_state(airport_code, runway)
+                    # Group by physical runway when using new config; by end string otherwise
+                    runway_key = logical_runway_id or runway_for_phrase or "DEFAULT"
+                    state = get_runway_state(airport_code, runway_key)
 
-                    # Runway currently occupied → HOLD
+                    # Runway currently occupied → HOLD and queue
                     if runway_active(state):
                         entry = {
                             "airport": airport_code,
-                            "runway": runway,
+                            "runway": runway_for_phrase,  # end used in messages
                             "callsign": callsign,
                             "action": action,
                             "frequency": channel,
@@ -378,7 +395,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                             hold_template = random.choice(hold_templates)
                             hold_text = hold_template.format(
                                 callsign=callsign,
-                                runway=runway,
+                                runway=runway_for_phrase,
                                 position=position,
                             )
                         else:
@@ -393,7 +410,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         state,
                         {
                             "airport": airport_code,
-                            "runway": runway,
+                            "runway": runway_for_phrase,
                             "callsign": callsign,
                             "action": action,
                             "frequency": channel,
@@ -402,18 +419,18 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         occupy,
                     )
 
-                # --- Build response ---
+                # --- Build response text with runway/taxiway placeholders ---
                 if "{taxiway}" in template and "taxiways" in tower:
                     taxiway = random.choice(tower["taxiways"])
                     response_text = template.format(
-                        landings=runway,
-                        departures=runway,
+                        landings=runway_for_phrase,
+                        departures=runway_for_phrase,
                         taxiway=taxiway,
                     )
                 else:
                     response_text = template.format(
-                        landings=runway,
-                        departures=runway,
+                        landings=runway_for_phrase,
+                        departures=runway_for_phrase,
                     )
 
                 # --- Ground → Tower handoff (only when actually on Ground) ---
@@ -454,18 +471,13 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     return None
 
 
-# ---------------------------
-# Routes
-# ---------------------------
-
 @app.route("/")
 def index():
-    maybe_cleanup_expired_frequencies()
+    cleanup_expired_frequencies()
     return jsonify({
         "status": "online",
-        "active_frequencies": len(channels),
+        "active_frequencies": len(channels)
     })
-
 
 @app.route("/atc/lookup", methods=["GET"])
 def atc_lookup():
@@ -487,38 +499,37 @@ def atc_lookup():
     return jsonify({
         "airport": airport,
         "frequency": freq,
-        "sender": sender,
+        "sender": sender
     })
-
 
 @app.route("/state", methods=["GET"])
 def get_state():
-    maybe_cleanup_expired_frequencies()
+    cleanup_expired_frequencies()
 
-    freq = int(request.args.get("frequency", DEFAULT_FREQUENCY))
+    freq = int(request.args.get("frequency", 16))
 
     if freq not in channels:
         return jsonify({
             "frequency": freq,
-            "last_id": 0,
+            "last_id": 0
         })
 
     channel = channels[freq]
 
     return jsonify({
         "frequency": freq,
-        "last_id": channel["next_id"] - 1,
+        "last_id": channel["next_id"] - 1
     })
 
 
 @app.route("/send", methods=["POST"])
 def send_message():
-    maybe_cleanup_expired_frequencies()
+    cleanup_expired_frequencies()
     process_runway_sequencing()
 
     data = request.get_json(force=True)
 
-    freq = int(data.get("frequency", DEFAULT_FREQUENCY))
+    freq = int(data.get("frequency", 16))
     text = data.get("text", "").strip()
     sender = data.get("sender", "UNKNOWN")
 
@@ -526,15 +537,14 @@ def send_message():
         return jsonify({"error": "empty message"}), 400
 
     channel = get_channel(freq)
-    messages = channel["messages"]
 
     msg = {
         "id": channel["next_id"],
         "text": text,
-        "sender": sender,
+        "sender": sender
     }
 
-    messages.append(msg)
+    channel["messages"].append(msg)
     channel["next_id"] += 1
 
     atc_response = handle_atc(text, freq, sender)
@@ -543,40 +553,41 @@ def send_message():
         atc_msg = {
             "id": channel["next_id"],
             "text": atc_text,
-            "sender": atc_sender,
+            "sender": atc_sender
         }
-        messages.append(atc_msg)
+        channel["messages"].append(atc_msg)
         channel["next_id"] += 1
 
     # message cap
-    if len(messages) > MAX_MESSAGES:
-        messages.popleft()
+    if len(channel["messages"]) > MAX_MESSAGES:
+        channel["messages"].pop(0)
 
     return jsonify({
         "status": "sent",
-        "id": msg["id"],
+        "id": msg["id"]
     })
 
 
 @app.route("/fetch", methods=["GET"])
 def fetch_messages():
-    maybe_cleanup_expired_frequencies()
+    cleanup_expired_frequencies()
     process_runway_sequencing()
 
-    freq = int(request.args.get("frequency", DEFAULT_FREQUENCY))
+    freq = int(request.args.get("frequency", 16))
     since_id = int(request.args.get("since_id", 0))
 
     if freq not in channels:
         return jsonify([])
 
     channel = get_channel(freq)
-    messages = channel["messages"]
 
-    msgs = [m for m in messages if m["id"] > since_id]
+    msgs = [
+        m for m in channel["messages"]
+        if m["id"] > since_id
+    ]
 
     return jsonify(msgs)
 
 
 if __name__ == "__main__":
-    # For Render you'll usually run via gunicorn, but this is fine for local dev:
     app.run(host="0.0.0.0", port=10000)

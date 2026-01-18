@@ -16,9 +16,23 @@
       "frequency": 119200,
       "tower_frequency": 119200, 
       "ground_frequency": 121800, 
-      "landings": ["36R"],
+      "landings": ["36L"],
       "departures": ["18L"],
-      "taxiways": ["Charlie"]
+      "taxiways": ["Charlie"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["36L"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": ["18L"]
+      }
+      ]
     },
     "SLSN": {
       "name": "Second Norway Lufthavn",
@@ -28,7 +42,21 @@
       "ground_frequency": 121925, 
       "landings": ["09R"],
       "departures": ["27R"],
-      "taxiways": ["X-Ray"]
+      "taxiways": ["X-Ray"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["09R"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": ["27R"]
+      }
+      ]
     },
     "SLJA": {
       "name": "Juneau Regional",
@@ -38,7 +66,15 @@
       "ground_frequency": 121900, 
       "landings": ["14"],
       "departures": ["32"],
-      "taxiways": ["Main"]
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["14"],
+        "takeoff_ends": ["32"]
+      }
+  ]
     },
     "SLKA": {
       "name": "Knapper Airport",
@@ -47,8 +83,16 @@
       "tower_frequency": 128075, 
       "ground_frequency": 121650, 
       "landings": ["10"],
-      "departures": ["10"],
-      "taxiways": ["Main"]
+      "departures": ["28"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["10"],
+        "takeoff_ends": ["28"]
+      }
+      ]
     }
   },
 
