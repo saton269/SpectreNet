@@ -13,7 +13,7 @@
     "SLHA": {
       "name": "Hollywood Airport",
       "sender": "SLHA ATC",
-      "weather_zone": "NORTH_COAST",
+      "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 119200,
       "tower_frequency": 120925, 
       "ground_frequency": 121800, 
@@ -38,7 +38,7 @@
     "SLSN": {
       "name": "Second Norway Lufthavn",
       "sender": "SLSN ATC",
-      "weather_zone": "NORTH_COAST",
+      "weather_zone": "SECOND_NORWAY_COOL",
       "frequency": 119200,
       "tower_frequency": 122800, 
       "ground_frequency": 121925, 
@@ -63,6 +63,7 @@
     "SLJA": {
       "name": "Juneau Regional",
       "sender": "SLJA ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 119200,
       "tower_frequency": 121100, 
       "ground_frequency": 121900, 
@@ -81,6 +82,7 @@
     "SLKA": {
       "name": "Knapper Airport",
       "sender": "SLKA ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
       "frequency": 119200,
       "tower_frequency": 128075, 
       "ground_frequency": 121650, 
@@ -99,6 +101,7 @@
     "SLSV": {
       "name": "Stormville Airfield",
       "sender": "SLSV ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
       "frequency": 119200,
       "tower_frequency": 127375, 
       "ground_frequency": 121625, 
@@ -117,6 +120,7 @@
     "SLFJ": {
       "name": "FjellMark Field",
       "sender": "SLFJ ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
       "frequency": 119200,
       "tower_frequency": 120025, 
       "ground_frequency": 121700, 
@@ -135,6 +139,7 @@
     "SLTO": {
       "name": "Toka Airfield",
       "sender": "SLTO ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
       "frequency": 119200,
       "tower_frequency": 128800, 
       "ground_frequency": 121750, 
@@ -153,6 +158,7 @@
     "SLSQ": {
       "name": "Snug Harbor Field",
       "sender": "SLSQ ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 119200,
       "tower_frequency": 122800, 
       "ground_frequency": 122800, 
@@ -171,6 +177,7 @@
     "SLAB": {
       "name": "Sailors Cove Airfield",
       "sender": "SLAB ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 119200,
       "tower_frequency": 123400, 
       "ground_frequency": 121625, 
@@ -189,6 +196,7 @@
     "SLHS": {
       "name": "Le Chateau Hamptons Aeroclub",
       "sender": "SLHS ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
       "frequency": 119200,
       "tower_frequency": 120700, 
       "ground_frequency": 120700, 
@@ -207,6 +215,7 @@
     "SLAC": {
       "name": "Rainforest Airfield",
       "sender": "SLAC ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 119200,
       "tower_frequency": 123475, 
       "ground_frequency": 123475, 
@@ -225,6 +234,7 @@
     "SLTH": {
       "name": "Town House Airport",
       "sender": "SLTH ATC",
+      "weather_zone": "CENTRAL_MAINLAND",
       "frequency": 119200,
       "tower_frequency": 122975, 
       "ground_frequency": 121925, 
