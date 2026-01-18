@@ -13,6 +13,7 @@
     "SLHA": {
       "name": "Hollywood Airport",
       "sender": "SLHA ATC",
+      "weather_zone": "NORTH_COAST",
       "frequency": 119200,
       "tower_frequency": 120925, 
       "ground_frequency": 121800, 
@@ -37,6 +38,7 @@
     "SLSN": {
       "name": "Second Norway Lufthavn",
       "sender": "SLSN ATC",
+      "weather_zone": "NORTH_COAST",
       "frequency": 119200,
       "tower_frequency": 122800, 
       "ground_frequency": 121925, 

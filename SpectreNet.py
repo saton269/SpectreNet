@@ -14,6 +14,9 @@ with open("atc_config.json", "r") as f:
 with open("channels.json") as f:
     CHANNELS_CONFIG = json.load(f)["channels"]
 
+with open("weather.json") as f:
+    WEATHER_CONFIG = json.load(f)
+
 CHANNELS_BY_FREQ = {}
 for channel_id, cfg in CHANNELS_CONFIG.items():
     freq = cfg["frequency"]
@@ -33,6 +36,13 @@ AUTO_CLEAR_RESPONSES = atc_config.get("auto_clear", {})
 SEQUENCING = atc_config.get("sequencing", {})
 OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
+
+ZONE_DEFAULTS = WEATHER_CONFIG.get("defaults", {})
+ZONE_CONFIGS = WEATHER_CONFIG.get("zones", {})
+CONDITION_CONFIGS = WEATHER_CONFIG.get("conditions", {})
+
+WEATHER_ZONES: dict[str, list[str]] = {}
+WEATHER_STATE: dict[str, dict] = {}
 
 
 
@@ -82,6 +92,165 @@ def can_transmit_on_frequency(freq, sender_uuid):
 
     # Future: other modes, but default to no if unknown
     return False
+
+def init_weather_zones():
+    for icao, ap in ATC_TOWERS.items():
+        zone_name = ap.get("weather_zone") or icao.upper()
+        ap["weather_zone"] = zone_name  # ensure it's set
+
+        WEATHER_ZONES.setdefault(zone_name, []).append(icao)
+
+        if zone_name not in WEATHER_STATE:
+            WEATHER_STATE[zone_name] = make_initial_weather_state(zone_name)
+
+
+def get_zone_defaults(zone_name: str) -> dict:
+    zone_cfg = ZONE_CONFIGS.get(zone_name, {})
+    cfg = ZONE_DEFAULTS.copy()
+    cfg.update(zone_cfg)
+    return cfg
+
+
+def make_initial_weather_state(zone_name: str) -> dict:
+    cfg = get_zone_defaults(zone_name)
+
+    base_temp = cfg.get("base_temp", 20)
+    temp_var  = cfg.get("temp_variation", 5)
+    wind_min  = cfg.get("wind_min", 0)
+    wind_max  = cfg.get("wind_max", 20)
+    qnh_mean  = cfg.get("qnh_mean", 1015)
+    qnh_var   = cfg.get("qnh_variation", 8)
+    favored   = cfg.get("favored_conditions", ["CLEAR", "FEW", "BKN"])
+
+    condition = random.choice(favored)
+
+    return {
+        "condition": condition,
+        "wind_dir": random.randint(0, 359),
+        "wind_speed": random.randint(wind_min, wind_max),
+        "visibility": CONDITION_CONFIGS.get(condition, {}).get("visibility", "GOOD"),
+        "style": CONDITION_CONFIGS.get(condition, {}).get("style", "VFR"),
+        "temp": base_temp + random.randint(-temp_var, temp_var),
+        "qnh": qnh_mean + random.randint(-qnh_var, qnh_var),
+        "last_update": time.time(),
+        "zone": zone_name
+    }
+
+def step_value(value, step, min_v, max_v):
+    return max(min_v, min(max_v, value + random.randint(-step, step)))
+
+
+def pick_next_condition(current: str) -> str:
+    cfg = CONDITION_CONFIGS.get(current, {})
+    transitions = cfg.get("transition", [])
+
+    for t in transitions:
+        if random.random() < t.get("chance", 0.0):
+            return t["to"]
+
+    # If none hit, stay where we are
+    return current
+
+
+def update_zone_weather(state: dict):
+    cfg = get_zone_defaults(state["zone"])
+
+    wind_min = cfg.get("wind_min", 0)
+    wind_max = cfg.get("wind_max", 20)
+    base_temp = cfg.get("base_temp", 20)
+    temp_var  = cfg.get("temp_variation", 5)
+    qnh_mean  = cfg.get("qnh_mean", 1015)
+    qnh_var   = cfg.get("qnh_variation", 8)
+
+    # Wind random walk within zone range
+    state["wind_dir"] = (state["wind_dir"] + random.randint(-10, 10)) % 360
+    state["wind_speed"] = step_value(state["wind_speed"], 2, wind_min, wind_max)
+
+    # Temp drifts toward base_temp-ish area
+    state["temp"] = step_value(state["temp"], 1, base_temp - temp_var, base_temp + temp_var)
+
+    # Pressure wiggle
+    state["qnh"] = step_value(state["qnh"], 1, qnh_mean - qnh_var, qnh_mean + qnh_var)
+
+    # Condition transition using config
+    new_cond = pick_next_condition(state["condition"])
+    state["condition"] = new_cond
+
+    cond_cfg = CONDITION_CONFIGS.get(new_cond, {})
+    state["visibility"] = cond_cfg.get("visibility", state.get("visibility", "GOOD"))
+    state["style"] = cond_cfg.get("style", state.get("style", "VFR"))
+
+    state["last_update"] = time.time()
+
+def get_weather_for_airport(icao: str) -> dict | None:
+    """
+    Return the current weather state dict for the airport's zone,
+    or None if the airport is unknown.
+    """
+    icao = icao.upper()
+    ap = ATC_TOWERS.get(icao)
+    if not ap:
+        return None
+
+    zone = ap.get("weather_zone", icao)
+    return WEATHER_STATE.get(zone)
+
+
+def format_weather_report(icao: str) -> str | None:
+    """
+    Build a human-friendly weather string for an airport using the
+    current zone state and the condition definitions from weather.json.
+    """
+    icao = icao.upper()
+    state = get_weather_for_airport(icao)
+    if not state:
+        return None
+
+    cond = state["condition"]
+    cond_cfg = CONDITION_CONFIGS.get(cond, {})
+    desc = cond_cfg.get("description", cond.lower())
+    vis = state.get("visibility", "GOOD").lower()
+    style = state.get("style", "VFR")
+
+    return (
+        f"{icao} weather: winds {state['wind_dir']:03.0f} at {state['wind_speed']} knots, "
+        f"visibility {vis}, {desc}, temperature {state['temp']}°C, "
+        f"QNH {state['qnh']}, flight conditions {style}."
+    )
+
+
+WEATHER_UPDATE_INTERVAL = 10 * 60  # 10 minutes
+
+def update_all_weather():
+    now = time.time()
+    for zone_name, state in WEATHER_STATE.items():
+        if now - state.get("last_update", 0) >= WEATHER_UPDATE_INTERVAL:
+            update_zone_weather(state)
+
+def get_weather_for_airport(icao: str) -> dict | None:
+    ap = ATC_TOWERS.get(icao.upper())
+    if not ap:
+        return None
+    zone = ap.get("weather_zone", icao.upper())
+    return WEATHER_STATE.get(zone)
+
+def format_weather_report(icao: str) -> str | None:
+    icao = icao.upper()
+    state = get_weather_for_airport(icao)
+    if not state:
+        return None
+
+    cond = state["condition"]
+    cond_cfg = CONDITION_CONFIGS.get(cond, {})
+    desc = cond_cfg.get("description", cond.lower())
+    vis  = state.get("visibility", "GOOD").lower()
+    style = state.get("style", "VFR")
+
+    return (
+        f"{icao} weather: winds {state['wind_dir']:03.0f} at {state['wind_speed']} knots, "
+        f"visibility {vis}, {desc}, temperature {state['temp']}°C, "
+        f"QNH {state['qnh']}, flight conditions {style}."
+    )
 
 
 def cleanup_expired_frequencies():
@@ -567,6 +736,7 @@ def get_state():
 def send_message():
     cleanup_expired_frequencies()
     process_runway_sequencing()
+    update_all_weather()
 
     data = request.get_json(force=True)
 
@@ -637,6 +807,59 @@ def fetch_messages():
     ]
 
     return jsonify(msgs)
+
+@app.route("/weather", methods=["POST"])
+def get_weather():
+    """
+    Return simulated weather for a given airport.
+
+    Request JSON:
+      { "airport": "SLHA" }
+
+    Response JSON (200):
+      {
+        "ok": true,
+        "airport": "SLHA",
+        "zone": "NORTH_COAST",
+        "condition": "FEW",
+        "visibility": "GOOD",
+        "style": "VFR",
+        "wind_dir": 190,
+        "wind_speed": 8,
+        "temp": 18,
+        "qnh": 1015,
+        "report": "SLHA weather: winds 190 at 8 knots, visibility good, few clouds, temperature 18°C, QNH 1015, flight conditions VFR."
+      }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    icao = data.get("airport", "").upper().strip()
+
+    if not icao:
+        return jsonify({"ok": False, "error": "Missing 'airport' field"}), 400
+
+    # Advance weather sim so it stays alive even if nobody's sending on /send
+    update_all_weather()
+
+    state = get_weather_for_airport(icao)
+    if not state:
+        return jsonify({"ok": False, "error": f"Unknown airport '{icao}'"}), 404
+
+    report = format_weather_report(icao)
+
+    return jsonify({
+        "ok": True,
+        "airport": icao,
+        "zone": state.get("zone"),
+        "condition": state.get("condition"),
+        "visibility": state.get("visibility"),
+        "style": state.get("style"),
+        "wind_dir": state.get("wind_dir"),
+        "wind_speed": state.get("wind_speed"),
+        "temp": state.get("temp"),
+        "qnh": state.get("qnh"),
+        "report": report
+    })
+
 
 
 if __name__ == "__main__":

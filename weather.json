@@ -1,0 +1,106 @@
+{
+  "defaults": {
+    "base_temp": 20,
+    "temp_variation": 6,
+    "wind_min": 0,
+    "wind_max": 20,
+    "qnh_mean": 1015,
+    "qnh_variation": 8,
+    "favored_conditions": ["CLEAR", "FEW", "BKN"]
+  },
+
+  "zones": {
+    "NORTH_COAST": {
+      "base_temp": 16,
+      "temp_variation": 5,
+      "wind_min": 2,
+      "wind_max": 22,
+      "qnh_mean": 1018,
+      "qnh_variation": 6,
+      "favored_conditions": ["CLEAR", "FEW", "BKN", "OVC"]
+    },
+    "MOUNTAIN": {
+      "base_temp": 5,
+      "temp_variation": 8,
+      "wind_min": 5,
+      "wind_max": 30,
+      "qnh_mean": 1008,
+      "qnh_variation": 10,
+      "favored_conditions": ["CLEAR", "FEW", "BKN", "STORM"]
+    },
+    "TROPICS": {
+      "base_temp": 27,
+      "temp_variation": 4,
+      "wind_min": 0,
+      "wind_max": 18,
+      "qnh_mean": 1010,
+      "qnh_variation": 5,
+      "favored_conditions": ["CLEAR", "FEW", "BKN", "RAIN", "STORM"]
+    }
+  },
+
+  "conditions": {
+    "CLEAR": {
+      "description": "clear skies",
+      "visibility": "GOOD",
+      "style": "VFR",
+      "icon": "sun",
+      "transition": [
+        { "to": "FEW", "chance": 0.15 }
+      ]
+    },
+    "FEW": {
+      "description": "few clouds",
+      "visibility": "GOOD",
+      "style": "VFR",
+      "icon": "sun_cloud",
+      "transition": [
+        { "to": "CLEAR", "chance": 0.20 },
+        { "to": "BKN",  "chance": 0.10 }
+      ]
+    },
+    "BKN": {
+      "description": "broken clouds",
+      "visibility": "MODERATE",
+      "style": "MVFR",
+      "icon": "clouds",
+      "transition": [
+        { "to": "FEW", "chance": 0.15 },
+        { "to": "OVC", "chance": 0.10 },
+        { "to": "RAIN","chance": 0.05 }
+      ]
+    },
+    "OVC": {
+      "description": "overcast",
+      "visibility": "MODERATE",
+      "style": "MVFR",
+      "icon": "clouds",
+      "transition": [
+        { "to": "BKN",  "chance": 0.15 },
+        { "to": "RAIN", "chance": 0.10 },
+        { "to": "STORM","chance": 0.03 }
+      ]
+    },
+    "RAIN": {
+      "description": "rain",
+      "visibility": "POOR",
+      "style": "IFR",
+      "icon": "rain",
+      "transition": [
+        { "to": "OVC",  "chance": 0.20 },
+        { "to": "STORM","chance": 0.05 },
+        { "to": "BKN",  "chance": 0.10 }
+      ]
+    },
+    "STORM": {
+      "description": "thunderstorms",
+      "visibility": "POOR",
+      "style": "IFR",
+      "icon": "storm",
+      "transition": [
+        { "to": "RAIN", "chance": 0.20 },
+        { "to": "OVC",  "chance": 0.10 }
+      ]
+    }
+  }
+}
