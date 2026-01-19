@@ -449,9 +449,11 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     # --- Classify the request intent ---
     # Ground ONLY handles taxi / pushback
     is_ground_request = any(
-        phrase in request_text
-        for phrase in TRIGGER_PHRASES.get("taxi","startup", [])
-    )
+    phrase in request_text
+    for action in ("taxi", "startup")
+    for phrase in TRIGGER_PHRASES.get(action, [])
+)
+
 
     # Tower-style requests (takeoff / landing, you can add more actions)
     is_tower_request = any(
