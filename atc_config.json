@@ -350,7 +350,7 @@
       "weather_zone": "ISLAND_MARITIME",
       "frequency": 119200,
       "tower_frequency": 124225, 
-      "ground_frequency": 125225, 
+      "ground_frequency": 124225, 
       "landings": ["18"],
       "departures": ["36"],
       "taxiways": ["Main"],
