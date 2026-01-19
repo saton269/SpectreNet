@@ -384,6 +384,16 @@
       "{callsign}, request acknowledged. Contact ground on {frequency}."
     ]
   },
+  "invalid_runway": {
+    "takeoff": [
+      "{callsign}, unable runway {requested}. Expect runway {runway}.",
+      "{callsign}, runway {requested} unavailable. Cleared for takeoff runway {runway}."
+    ],
+    "landing": [
+      "{callsign}, unable runway {requested}. Expect landing runway {runway}.",
+      "{callsign}, runway {requested} unavailable. Cleared to land runway {runway}."
+    ]
+  },
 
   "sequencing": {
     "enabled": true,
