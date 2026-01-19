@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify # pyright: ignore[reportMissingImports
 import time
 import json
 import random
-import re
 from collections import deque
 
 
@@ -37,8 +36,6 @@ AUTO_CLEAR_RESPONSES = atc_config.get("auto_clear", {})
 SEQUENCING = atc_config.get("sequencing", {})
 OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
-INVALID_RUNWAY_MESSAGES = atc_config.get("invalid_runway", {})
-
 
 ZONE_DEFAULTS = WEATHER_CONFIG.get("defaults", {})
 ZONE_CONFIGS = WEATHER_CONFIG.get("zones", {})
@@ -56,8 +53,7 @@ RUNWAY_STATE = {}
 
 DEFAULT_FREQUENCY = 16
 
-RUNWAY_RE = re.compile(r"\b(?:runway|rwy)\s*([0-3]?\d)\s*([LRC])?\b", re.IGNORECASE)
-PILOT_ASSIGNED_RUNWAY = {}
+
 
 
 MAX_MESSAGES = 100  # keep list small
@@ -98,57 +94,6 @@ def can_transmit_on_frequency(freq, sender_uuid):
 
     # Future: other modes, but default to no if unknown
     return False
-
-def parse_requested_runway(request_text: str) -> str | None:
-    m = RUNWAY_RE.search(request_text or "")
-    if not m:
-        return None
-    num = int(m.group(1))
-    if num < 1 or num > 36:
-        return None
-    side = (m.group(2) or "").upper()
-    return f"{num:02d}{side}"
-
-def runway_ends_for_action(tower: dict, action: str) -> set[str]:
-    """
-    Return valid runway END strings for the given action based on your schema.
-    - landing: use tower['landings'] or runways[].landing_ends
-    - takeoff: use tower['departures'] or runways[].takeoff_ends
-    - taxi: typically taxi to departure runway ends (departures)
-    """
-    ends = set()
-
-    if action == "landing":
-        if tower.get("landings"):
-            ends.update(x.upper() for x in tower["landings"])
-        else:
-            for r in tower.get("runways", []):
-                ends.update(x.upper() for x in r.get("landing_ends", []))
-
-    elif action == "takeoff":
-        if tower.get("departures"):
-            ends.update(x.upper() for x in tower["departures"])
-        else:
-            for r in tower.get("runways", []):
-                ends.update(x.upper() for x in r.get("takeoff_ends", []))
-
-    elif action == "taxi":
-        # Taxi usually targets the departure runway end
-        ends = runway_ends_for_action(tower, "takeoff")
-
-    return ends
-
-def physical_id_for_runway_end(tower: dict, runway_end: str) -> str | None:
-    """
-    Map runway end (e.g. '27L') to runway physical_id using your runways[] schema.
-    """
-    runway_end = (runway_end or "").upper()
-    for r in tower.get("runways", []):
-        if runway_end in [x.upper() for x in r.get("landing_ends", [])]:
-            return r.get("physical_id") or r.get("id")
-        if runway_end in [x.upper() for x in r.get("takeoff_ends", [])]:
-            return r.get("physical_id") or r.get("id")
-    return None
 
 def init_weather_zones():
     for icao, ap in ATC_TOWERS.items():
@@ -493,10 +438,6 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
     request_text = request_text.lower()
 
-    requested_runway = parse_requested_runway(request_text)  # e.g. "27L"
-    pilot_key = (airport_code, callsign)
-
-
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
         return None
@@ -521,82 +462,68 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         for phrase in TRIGGER_PHRASES.get(action, [])
     )
 
-        # =========================================================
+    # =========================================================
     # 1) Redirects: real ground/tower requests on the *wrong* freq
     # =========================================================
 
-    # A) Ground-style requests (taxi / startup) on TOWER frequency -> redirect to GROUND
+    # Taxi/pushback (ground) on Tower frequency -> redirect to Ground
     if (
         tower_freq != ground_freq
+        and is_ground_request
         and channel == tower_freq
         and channel != ground_freq
     ):
-        is_ground_request = any(
-            phrase in request_text
-            for action in ("taxi", "startup")
-            for phrase in TRIGGER_PHRASES.get(action, [])
-        )
-
-        if is_ground_request:
-            # Special-case startup redirect if desired
-            is_startup_request = any(
-                phrase in request_text
-                for phrase in TRIGGER_PHRASES.get("startup", [])
+        templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
+        if templates:
+            template = random.choice(templates)
+            text = template.format(
+                callsign=callsign,
+                airport=airport_code,
+                frequency=format_freq(ground_freq),
             )
+            text = text[0].upper() + text[1:]
 
-            if is_startup_request:
-                templates = REDIRECT_MESSAGES.get("startup_tower_to_ground", [])
-                # Fall back to generic tower_to_ground if startup-specific empty
-                if not templates:
-                    templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
-            else:
-                templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
+            tower_sender = tower.get("tower_sender", f"{airport_code} Tower")
+            return text, tower_sender
 
-            if templates:
-                template = random.choice(templates)
-                text = template.format(
-                    callsign=callsign,
-                    airport=airport_code,
-                    # These messages talk about CONTACT GROUND on {frequency}
-                    frequency=format_freq(ground_freq),
-                )
-                text = text[0].upper() + text[1:]
+        # No templates? just ignore like before
+        return None
 
-                tower_sender = tower.get("tower_sender", f"{airport_code} Tower")
-                return text, tower_sender
-
-            # No templates? just ignore like before
-            return None
-
-    # B) Tower-style requests (takeoff / landing) on GROUND frequency -> redirect to TOWER
+    # Takeoff/landing (tower) on Ground frequency -> redirect to Tower
     if (
         tower_freq != ground_freq
+        and is_tower_request
         and channel == ground_freq
         and channel != tower_freq
     ):
-        is_tower_request = any(
-            phrase in request_text
-            for action in ("takeoff", "landing")
-            for phrase in TRIGGER_PHRASES.get(action, [])
+        #templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
+        is_startup_request = any(
+            phrase in request_text for phrase in TRIGGER_PHRASES.get("startup", [])
         )
 
-        if is_tower_request:
-            templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
-            if templates:
-                template = random.choice(templates)
-                text = template.format(
-                    callsign=callsign,
-                    airport=airport_code,
-                    # These messages talk about CONTACT TOWER on {frequency}
-                    frequency=format_freq(tower_freq),
-                )
-                text = text[0].upper() + text[1:]
+        templates = (
+            REDIRECT_MESSAGES.get("startup_tower_to_ground", [])
+            if is_startup_request
+            else REDIRECT_MESSAGES.get("tower_to_ground", [])
+        )
 
-                ground_sender = tower.get("ground_sender", f"{airport_code} Ground")
-                return text, ground_sender
+        # If startup-specific list is empty, fall back to the generic tower_to_ground list
+        if not templates and is_startup_request:
+            templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
 
-            return None
+        if templates:
+            template = random.choice(templates)
+            text = template.format(
+                callsign=callsign,
+                airport=airport_code,
+                frequency=format_freq(tower_freq),
+            )
+            text = text[0].upper() + text[1:]
 
+            ground_sender = tower.get("ground_sender", f"{airport_code} Ground")
+            return text, ground_sender
+
+        return None
 
     # =========================================================
     # 2) If the tuned frequency doesn't belong to this airport, ignore
@@ -631,60 +558,18 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 runway = ""
 
                 if action in ("landing", "takeoff"):
-                    if action == "takeoff":
-                        valid = runway_ends_for_action(tower, "takeoff")
-
-                        # 1) Honor explicit requested runway if valid
-                        if requested_runway and requested_runway.upper() in valid:
-                            runway = requested_runway.upper()
-                            logical_runway_id = physical_id_for_runway_end(tower, runway)
-                            PILOT_ASSIGNED_RUNWAY[pilot_key] = runway
-
-                        else:
-                            # 2) Reuse taxi-assigned runway if valid
-                            assigned = PILOT_ASSIGNED_RUNWAY.get(pilot_key)
-                            if assigned and assigned in valid:
-                                runway = assigned
-                                logical_runway_id = physical_id_for_runway_end(tower, runway)
-                            else:
-                                # 3) Fall back to existing chooser
-                                logical_runway_id, runway = choose_runway_for_action(tower, action)
-                                if runway:
-                                    PILOT_ASSIGNED_RUNWAY[pilot_key] = runway
-
-                    else:
-                        # landing:
-                        valid = runway_ends_for_action(tower, "landing")
-
-                        if requested_runway and requested_runway.upper() in valid:
-                            runway = requested_runway.upper()
-                            logical_runway_id = physical_id_for_runway_end(tower, runway)
-                            PILOT_ASSIGNED_RUNWAY[pilot_key] = runway
-                        else:
-                            logical_runway_id, runway = choose_runway_for_action(tower, action)
-                            if runway:
-                                PILOT_ASSIGNED_RUNWAY[pilot_key] = runway
-
+                    # Uses new runways[] config if present; falls back to
+                    # landings/departures lists otherwise.
+                    logical_runway_id, runway = choose_runway_for_action(tower, action)
 
                 elif action == "taxi":
-                    valid = runway_ends_for_action(tower, "taxi")
-
-                    # 1) If pilot explicitly requested a runway and it's valid for taxi → honor it
-                    if requested_runway and requested_runway.upper() in valid:
-                        runway = requested_runway.upper()
-                        PILOT_ASSIGNED_RUNWAY[pilot_key] = runway
-
-                    else:
-                        # 2) Reuse previously assigned runway (keeps taxi->takeoff consistent)
-                        assigned = PILOT_ASSIGNED_RUNWAY.get(pilot_key)
-                        if assigned and assigned in valid:
-                            runway = assigned
-                        else:
-                            # 3) Otherwise pick a runway (random or your own strategy)
-                            runway = random.choice(sorted(valid)) if valid else ""
-                            if runway:
-                                PILOT_ASSIGNED_RUNWAY[pilot_key] = runway
-
+                    # Taxi is not sequenced; we just want a reasonable runway
+                    base_choices = (
+                        tower.get("departures")
+                        or tower.get("landings")
+                        or tower.get("runways", [])
+                    )
+                    runway = base_choices[0] if base_choices else ""
 
                 elif action == "startup":
                     # startup does not need a runway
@@ -755,31 +640,6 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         },
                         occupy,
                     )
-
-                        # --------------------------------------------------
-                        # If pilot requested an invalid runway, override with
-                        # a friendly "unable, use {runway}" style message
-                        # --------------------------------------------------
-                # --------------------------------------------------
-                # Invalid runway request handling (JSON-driven)
-                # --------------------------------------------------
-                if action in ("landing", "takeoff") and requested_runway:
-                    requested_norm = requested_runway.upper()
-                    valid_for_action = runway_ends_for_action(tower, action)
-
-                    if requested_norm not in valid_for_action and runway:
-                        templates = INVALID_RUNWAY_MESSAGES.get(action, [])
-                        if templates:
-                            template = random.choice(templates)
-                            invalid_text = template.format(
-                                callsign=callsign,
-                                requested=requested_norm,
-                                runway=runway,
-                            )
-                            invalid_text = invalid_text[0].upper() + invalid_text[1:]
-                            return invalid_text, sender_name
-
-
 
                 # --- Build response text with runway/taxiway placeholders ---
                 if "{taxiway}" in template and "taxiways" in tower:

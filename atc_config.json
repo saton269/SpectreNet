@@ -258,7 +258,7 @@
     },
     "SLEO": {
       "name": "Angels E1",
-      "sender": "SLEQ ATC",
+      "sender": "SLEO ATC",
       "weather_zone": "ISLAND_MARITIME",
       "frequency": 119200,
       "tower_frequency": 120525, 
