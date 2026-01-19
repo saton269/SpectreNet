@@ -453,11 +453,11 @@
       "cleared to taxi to runway {departures}"
     ],
     "startup": [
-      "{callsign}, startup approved.",
-      "{callsign}, engine start approved.",
-      "{callsign}, startup approved at your discretion.",
-      "{callsign}, cleared for startup. Let us know when ready.",
-      "{callsign}, startup approved. Welcome aboard."
+      "startup approved.",
+      "engine start approved.",
+      "startup approved at your discretion.",
+      "cleared for startup. Let us know when ready.",
+      "startup approved. Welcome aboard."
     ]
   },
 
