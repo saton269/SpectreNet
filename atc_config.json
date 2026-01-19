@@ -255,6 +255,113 @@
         "takeoff_ends": ["36L"]
       }
       ]
+    },
+    "SLEO": {
+      "name": "Angels E1",
+      "sender": "SLEQ ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 120525, 
+      "ground_frequency": 121725, 
+      "landings": ["09L","09C","09R"],
+      "departures": ["27L","27C","27R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["09L"],
+        "takeoff_ends": ["27R"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["09R"],
+        "takeoff_ends": ["27L"]
+      },
+      {
+        "id": "RWY_C",
+        "physical_id": "RWY_C",
+        "landing_ends": ["09C"],
+        "takeoff_ends": ["27C"]
+      }
+      ]
+    },
+    "SLEP": {
+      "name": "Angels E2",
+      "sender": "SLEP ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 128300, 
+      "ground_frequency": 121600, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLEQ": {
+      "name": "Angels E3",
+      "sender": "SLEQ ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 127650, 
+      "ground_frequency": 121600, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLBK": {
+      "name": "Heart Of The Blake Sea Airfield",
+      "sender": "SLBK ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 122800, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLHX": {
+      "name": "HXI Airstrip",
+      "sender": "SLHX ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 124225, 
+      "ground_frequency": 125225, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
     }
   },
 
@@ -270,6 +377,11 @@
       "{callsign}, for departure or arrival clearance, contact {airport} Tower on {frequency}.",
       "{callsign}, switch to {airport} Tower {frequency} for this request.",
       "{callsign}, unable to handle this on Ground. Contact {airport} Tower on {frequency}."
+    ],
+    "startup_tower_to_ground": [
+      "{callsign}, contact ground for startup clearance on {frequency}.",
+      "{callsign}, startup is handled by ground. Switch to {frequency}.",
+      "{callsign}, request acknowledged. Contact ground on {frequency}."
     ]
   },
 
@@ -339,6 +451,13 @@
       "taxi via {taxiway} to runway {departures}",
       "taxi to runway {departures}. Hold short",
       "cleared to taxi to runway {departures}"
+    ],
+    "startup": [
+      "{callsign}, startup approved.",
+      "{callsign}, engine start approved.",
+      "{callsign}, startup approved at your discretion.",
+      "{callsign}, cleared for startup. Let us know when ready.",
+      "{callsign}, startup approved. Welcome aboard."
     ]
   },
 
@@ -358,6 +477,7 @@
   "trigger_phrases": {
     "landing": ["request landing", "landing", "request to land", "clearance to land", "inbound for landing", "on final"],
     "takeoff": ["request takeoff","request departure", "take off", "takeoff", "depart", "departure","holding short ready for departure","ready at runway"],
-    "taxi": ["request taxi","request taxi to runway", "taxi", "taxiing", "ready to taxi","taxi for departure"]
+    "taxi": ["request taxi","request taxi to runway", "taxi", "taxiing", "ready to taxi","taxi for departure"],
+    "startup": ["request startup", "request engine start", "request start", "ready for startup", "ready to start", "request startup clearance", "request engine start at gate", "startup", "start up"]
   }
 }

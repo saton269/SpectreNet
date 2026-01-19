@@ -450,7 +450,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     # Ground ONLY handles taxi / pushback
     is_ground_request = any(
         phrase in request_text
-        for phrase in TRIGGER_PHRASES.get("taxi", [])
+        for phrase in TRIGGER_PHRASES.get("taxi","startup", [])
     )
 
     # Tower-style requests (takeoff / landing, you can add more actions)
@@ -494,7 +494,21 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         and channel == ground_freq
         and channel != tower_freq
     ):
-        templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
+        #templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
+        is_startup_request = any(
+            phrase in request_text for phrase in TRIGGER_PHRASES.get("startup", [])
+        )
+
+        templates = (
+            REDIRECT_MESSAGES.get("startup_tower_to_ground", [])
+            if is_startup_request
+            else REDIRECT_MESSAGES.get("tower_to_ground", [])
+        )
+
+        # If startup-specific list is empty, fall back to the generic tower_to_ground list
+        if not templates and is_startup_request:
+            templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
+
         if templates:
             template = random.choice(templates)
             text = template.format(
@@ -554,6 +568,11 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         or tower.get("runways", [])
                     )
                     runway = base_choices[0] if base_choices else ""
+
+                elif action == "startup":
+                    # startup does not need a runway
+                    logical_runway_id = None
+                    runway = ""
 
                 else:
                     # Other actions (non-runway-specific)

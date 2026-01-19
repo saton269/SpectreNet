@@ -37,6 +37,15 @@
         "qnh_variation": 6,
         "favored_conditions": ["CLEAR", "FEW", "BKN", "OVC"]
     },
+    "ISLAND_MARITIME": {
+        "base_temp": 15,
+        "temp_variation": 4,
+        "wind_min": 4,
+        "wind_max": 24,
+        "qnh_mean": 1016,
+        "qnh_variation": 7,
+        "favored_conditions": ["FEW", "BKN", "OVC", "RAIN"]
+    },
     "SOUTH_SUBTROPICAL": {
         "base_temp": 26,
         "temp_variation": 4,
