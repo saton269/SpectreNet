@@ -21,9 +21,15 @@ with open("weather.json") as f:
 CHANNELS_BY_FREQ = {}
 for channel_id, cfg in CHANNELS_CONFIG.items():
     freq = cfg["frequency"]
+
+    tx_policy = cfg.get("tx_policy", {})
+    if tx_policy.get("mode") == "whitelist_uuid":
+        tx_policy["allowed_uuids_set"] = set(tx_policy.get("allowed_uuids", []))
+
     CHANNELS_BY_FREQ[freq] = {
         "id": channel_id,
-        **cfg
+        **cfg,
+        "tx_policy": tx_policy,
     }
 
 ATC_TOWERS = atc_config["airports"]
@@ -53,6 +59,8 @@ WEATHER_STATE: dict[str, dict] = {}
 channels = {}
 
 RUNWAY_STATE = {}
+RUNWAY_END_TO_PHYSICAL: dict[str, dict[str, str]] = {}   # ICAO -> { "27L": "RWY_L", ... }
+VALID_ENDS_BY_ACTION: dict[str, dict[str, set[str]]] = {}
 
 DEFAULT_FREQUENCY = 16
 
@@ -69,7 +77,7 @@ def get_channel(freq):
     if freq not in channels:
         channels[freq] = {
             "next_id": 1,
-            "messages": [],
+            "messages": deque(maxlen=MAX_MESSAGES),
             "last_active": now
         }
 
@@ -93,11 +101,37 @@ def can_transmit_on_frequency(freq, sender_uuid):
         return False
 
     if mode == "whitelist_uuid":
-        allowed = set(policy.get("allowed_uuids", []))
+        allowed = policy.get("allowed_uuids_set")
+        if allowed is None:
+            # Safety fallback if config was loaded before precompute
+            allowed = set(policy.get("allowed_uuids", []))
+            policy["allowed_uuids_set"] = allowed
         return sender_uuid in allowed
 
     # Future: other modes, but default to no if unknown
     return False
+
+def build_runway_indexes():
+    for icao, tower in ATC_TOWERS.items():
+        icao_u = icao.upper()
+        tower["_icao"] = icao_u  # tag config so helpers can find ICAO quickly
+
+        # Map runway-end -> physical runway id
+        end_map: dict[str, str] = {}
+        for r in tower.get("runways", []):
+            phys = (r.get("physical_id") or r.get("id") or "").strip()
+            if not phys:
+                continue
+
+            for end in (r.get("landing_ends") or []):
+                end_map[end.upper()] = phys
+            for end in (r.get("takeoff_ends") or []):
+                end_map[end.upper()] = phys
+
+        RUNWAY_END_TO_PHYSICAL[icao_u] = end_map
+        VALID_ENDS_BY_ACTION[icao_u] = {}  # filled lazily by runway_ends_for_action
+
+build_runway_indexes()
 
 def parse_requested_runway(request_text: str) -> str | None:
     m = RUNWAY_RE.search(request_text or "")
@@ -112,11 +146,15 @@ def parse_requested_runway(request_text: str) -> str | None:
 def runway_ends_for_action(tower: dict, action: str) -> set[str]:
     """
     Return valid runway END strings for the given action based on your schema.
-    - landing: use tower['landings'] or runways[].landing_ends
-    - takeoff: use tower['departures'] or runways[].takeoff_ends
-    - taxi: typically taxi to departure runway ends (departures)
+    Caches per-airport per-action for speed.
     """
-    ends = set()
+    icao = (tower.get("_icao") or "").upper()
+    if icao:
+        cached = VALID_ENDS_BY_ACTION.get(icao, {}).get(action)
+        if cached is not None:
+            return cached
+
+    ends: set[str] = set()
 
     if action == "landing":
         if tower.get("landings"):
@@ -133,22 +171,35 @@ def runway_ends_for_action(tower: dict, action: str) -> set[str]:
                 ends.update(x.upper() for x in r.get("takeoff_ends", []))
 
     elif action == "taxi":
-        # Taxi usually targets the departure runway end
         ends = runway_ends_for_action(tower, "takeoff")
+
+    # Cache result
+    if icao:
+        VALID_ENDS_BY_ACTION.setdefault(icao, {})[action] = ends
 
     return ends
 
+
 def physical_id_for_runway_end(tower: dict, runway_end: str) -> str | None:
     """
-    Map runway end (e.g. '27L') to runway physical_id using your runways[] schema.
+    Map runway end (e.g. '27L') to runway physical_id using cached lookup.
     """
     runway_end = (runway_end or "").upper()
+    icao = (tower.get("_icao") or "").upper()
+
+    if icao:
+        hit = RUNWAY_END_TO_PHYSICAL.get(icao, {}).get(runway_end)
+        if hit:
+            return hit
+
+    # Fallback (in case runways are missing or caches not built)
     for r in tower.get("runways", []):
         if runway_end in [x.upper() for x in r.get("landing_ends", [])]:
             return r.get("physical_id") or r.get("id")
         if runway_end in [x.upper() for x in r.get("takeoff_ends", [])]:
             return r.get("physical_id") or r.get("id")
     return None
+
 
 def init_weather_zones():
     for icao, ap in ATC_TOWERS.items():
@@ -324,7 +375,7 @@ def get_runway_state(airport, runway):
     if not state:
         state = {
             "active": None,          # dict or None
-            "queue": [],             # waiting aircraft
+            "queue": deque(),             # waiting aircraft
             "expires_at": 0
         }
         airport_state[runway] = state
@@ -442,7 +493,7 @@ def process_runway_sequencing():
 
             # Auto-clear next
             if not state["active"] and state["queue"]:
-                entry = state["queue"].pop(0)
+                entry = state["queue"].popleft()
 
                 occupy = OCCUPANCY.get(entry["action"], 30)
                 set_runway_active(state, entry, occupy)
@@ -463,7 +514,7 @@ def process_runway_sequencing():
                         text = f"{entry['callsign']}, cleared for takeoff runway {entry['runway']}."
 
                 freq = entry["frequency"]
-                ch = channels.get(freq)
+                ch = get_channel(freq)
                 if ch:
                     ch["messages"].append({
                         "id": ch["next_id"],
