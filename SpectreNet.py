@@ -45,6 +45,15 @@ OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
 INVALID_RUNWAY_MESSAGES = atc_config.get("invalid_runway", {})
 
+FLIGHT_PLAN_CONFIG = atc_config.get("flight_plan", {})
+FP_TRIGGERS = [t.lower() for t in FLIGHT_PLAN_CONFIG.get("triggers", [])]
+FP_RESPONSES = FLIGHT_PLAN_CONFIG.get("responses", [])
+
+FP_HANDOFF_CONFIG = atc_config.get("flight_plan_departure_handoff", {})
+FP_HANDOFF_RESPONSES = FP_HANDOFF_CONFIG.get("responses", [])
+FP_HANDOFF_CHANCE = float(FP_HANDOFF_CONFIG.get("chance", 0.0))
+
+
 
 ZONE_DEFAULTS = WEATHER_CONFIG.get("defaults", {})
 ZONE_CONFIGS = WEATHER_CONFIG.get("zones", {})
@@ -61,6 +70,10 @@ channels = {}
 RUNWAY_STATE = {}
 RUNWAY_END_TO_PHYSICAL: dict[str, dict[str, str]] = {}   # ICAO -> { "27L": "RWY_L", ... }
 VALID_ENDS_BY_ACTION: dict[str, dict[str, set[str]]] = {}
+
+# Airport+callsign -> timestamp (or just flag) for active flight plans
+ACTIVE_FLIGHT_PLANS: dict[tuple[str, str], float] = {}
+
 
 DEFAULT_FREQUENCY = 16
 
@@ -447,8 +460,6 @@ def choose_runway_for_action(tower_cfg, action):
     logical_id = runway_end
     return logical_id, runway_end
 
-
-
 def normalize_atc_message(message_text: str, sender_name: str):
     """
     Supports:
@@ -475,6 +486,17 @@ def normalize_atc_message(message_text: str, sender_name: str):
     callsign = parts[1].strip() or sender_name
     request_text = parts[2]
     return airport_code, callsign, request_text
+
+def is_flight_plan_request(request_text: str) -> bool:
+    """
+    Minimal flight plan detector based on JSON-configured triggers.
+    """
+    t = (request_text or "").lower()
+    for phrase in FP_TRIGGERS:
+        if phrase and phrase in t:
+            return True
+    return False
+
 
 def process_runway_sequencing():
     if not SEQUENCING.get("enabled", False):
@@ -512,6 +534,27 @@ def process_runway_sequencing():
                         text = f"{entry['callsign']}, cleared to land runway {entry['runway']}."
                     else:
                         text = f"{entry['callsign']}, cleared for takeoff runway {entry['runway']}."
+                    
+                # Flight plan departure handoff for auto-cleared takeoffs
+                if entry["action"] == "takeoff":
+                    key = (entry["airport"], entry["callsign"].upper())
+                    if key in ACTIVE_FLIGHT_PLANS:
+                        ACTIVE_FLIGHT_PLANS.pop(key, None)
+
+                        if FP_HANDOFF_RESPONSES and FP_HANDOFF_CHANCE > 0.0:
+                            if random.random() < FP_HANDOFF_CHANCE:
+                                handoff_template = random.choice(FP_HANDOFF_RESPONSES)
+                                tower_cfg = ATC_TOWERS.get(entry["airport"], {})
+                                tower_freq_for_handoff = tower_cfg.get(
+                                    "tower_frequency",
+                                    tower_cfg.get("frequency", DEFAULT_FREQUENCY)
+                                )
+                                freq_str = format_freq(tower_freq_for_handoff)
+                                handoff_text = handoff_template.format(
+                                    AIRPORT=entry["airport"],
+                                    FREQUENCY=freq_str,
+                                )
+                                text = f"{text} {handoff_text}"
 
                 freq = entry["frequency"]
                 ch = get_channel(freq)
@@ -542,6 +585,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     if not airport_code or not request_text:
         return None
 
+    original_request_text = request_text
     request_text = request_text.lower()
 
     requested_runway = parse_requested_runway(request_text)  # e.g. "27L"
@@ -667,8 +711,31 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         sender_name = tower.get("tower_sender", f"{airport_code} Tower")
 
     # =========================================================
-    # 4) Normal ATC trigger matching
+    # 4) Flight plan handling (simple: store flag, send canned reply)
     # =========================================================
+    if is_flight_plan_request(request_text):
+        # Mark this callsign as having a flight plan at this airport
+        ACTIVE_FLIGHT_PLANS[(airport_code, callsign.upper())] = time.time()
+
+        if FP_RESPONSES:
+            template = random.choice(FP_RESPONSES)
+            fp_text = template.format(
+                CALLSIGN=callsign,
+                AIRPORT=airport_code,
+            )
+        else:
+            fp_text = f"{callsign}, {airport_code} Tower, flight plan received."
+
+        fp_text = fp_text[0].upper() + fp_text[1:]
+
+        # Always respond as Tower for flight plans
+        fp_sender = tower.get("tower_sender", f"{airport_code} Tower")
+        return fp_text, fp_sender
+
+    # =========================================================
+    # 5) Normal ATC trigger matching
+    # =========================================================
+
     for action, phrases in TRIGGER_PHRASES.items():
         for phrase in phrases:
             if phrase in request_text:
@@ -857,6 +924,27 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                                 handoff_text = handoff_template.format(
                                     airport=airport_code,
                                     frequency=formatted_freq,
+                                )
+                                response_text = f"{response_text}, {handoff_text}"
+
+                # --- Flight plan departure handoff (Tower, takeoff only) ---
+                if action == "takeoff" and role == "tower":
+                    key = (airport_code, callsign.upper())
+                    if key in ACTIVE_FLIGHT_PLANS:
+                        # Drop the plan as soon as we issue a takeoff clearance
+                        ACTIVE_FLIGHT_PLANS.pop(key, None)
+
+                        if FP_HANDOFF_RESPONSES and FP_HANDOFF_CHANCE > 0.0:
+                            if random.random() < FP_HANDOFF_CHANCE:
+                                handoff_template = random.choice(FP_HANDOFF_RESPONSES)
+                                tower_freq_for_handoff = tower.get(
+                                    "tower_frequency",
+                                    tower.get("frequency", DEFAULT_FREQUENCY)
+                                )
+                                freq_str = format_freq(tower_freq_for_handoff)
+                                handoff_text = handoff_template.format(
+                                    AIRPORT=airport_code,
+                                    FREQUENCY=freq_str,
                                 )
                                 response_text = f"{response_text}, {handoff_text}"
 

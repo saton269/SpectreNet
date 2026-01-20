@@ -446,6 +446,30 @@
     ]
   },
 
+  "flight_plan": {
+    "triggers": [
+      "flight plan",
+      "flightplan",
+      "filing flight plan",
+      "filing vfr flight plan",
+      "filing ifr flight plan"
+    ],
+    "responses": [
+      "{CALLSIGN}, {AIRPORT} Tower, flight plan received. Advise ready for departure.",
+      "{CALLSIGN}, {AIRPORT} Tower, your flight plan is on file. Advise ready for departure.",
+      "{CALLSIGN}, {AIRPORT} Tower, flight plan copied. Report ready for departure."
+    ]
+  },
+
+  "flight_plan_departure_handoff": {
+    "chance": 0.6,
+    "responses": [
+      "After departure, contact {AIRPORT} Tower on {FREQUENCY}.",
+      "On departure, tune {AIRPORT} Tower on {FREQUENCY}.",
+      "When leaving the pattern, contact {AIRPORT} Tower on {FREQUENCY}."
+    ]
+  },
+
   "responses": {
     "landing": [
       "cleared to land runway {landings}", 
