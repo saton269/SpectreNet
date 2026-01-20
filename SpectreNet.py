@@ -9,6 +9,9 @@ from collections import deque
 app = Flask(__name__)
 
 # Load airports and triggers from JSON
+with open("airports.json", "r") as f:
+    airport_data = json.load(f)
+
 with open("atc_config.json", "r") as f:
     atc_config = json.load(f)
 
@@ -32,7 +35,7 @@ for channel_id, cfg in CHANNELS_CONFIG.items():
         "tx_policy": tx_policy,
     }
 
-ATC_TOWERS = atc_config["airports"]
+ATC_TOWERS = airport_data["airports"]
 ATC_RESPONSES = atc_config["responses"]
 TRIGGER_PHRASES = atc_config["trigger_phrases"]
 HANDOFF_MESSAGES = atc_config.get("handoff_messages", {})
@@ -603,11 +606,10 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     # --- Classify the request intent ---
     # Ground ONLY handles taxi / pushback
     is_ground_request = any(
-    phrase in request_text
-    for action in ("taxi", "startup")
-    for phrase in TRIGGER_PHRASES.get(action, [])
-)
-
+        phrase in request_text
+        for action in ("taxi", "startup")
+        for phrase in TRIGGER_PHRASES.get(action, [])
+    )
 
     # Tower-style requests (takeoff / landing, you can add more actions)
     is_tower_request = any(
@@ -616,7 +618,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         for phrase in TRIGGER_PHRASES.get(action, [])
     )
 
-        # =========================================================
+    # =========================================================
     # 1) Redirects: real ground/tower requests on the *wrong* freq
     # =========================================================
 

@@ -1,0 +1,357 @@
+{
+"airports": {
+    "SLHA": {
+      "name": "Hollywood Airport",
+      "sender": "SLHA ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 120925, 
+      "ground_frequency": 121800, 
+      "landings": ["36L"],
+      "departures": ["18L"],
+      "taxiways": ["Charlie"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["36L"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": ["18L"]
+      }
+      ]
+    },
+    "SLSN": {
+      "name": "Second Norway Lufthavn",
+      "sender": "SLSN ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 121925, 
+      "landings": ["09R"],
+      "departures": ["27R"],
+      "taxiways": ["X-Ray"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["09R"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": ["27R"]
+      }
+      ]
+    },
+    "SLJA": {
+      "name": "Juneau Regional",
+      "sender": "SLJA ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 121100, 
+      "ground_frequency": 121900, 
+      "landings": ["14"],
+      "departures": ["32"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["14"],
+        "takeoff_ends": ["32"]
+      }
+      ]
+    },
+    "SLKA": {
+      "name": "Knapper Airport",
+      "sender": "SLKA ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
+      "frequency": 119200,
+      "tower_frequency": 128075, 
+      "ground_frequency": 121650, 
+      "landings": ["10"],
+      "departures": ["28"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["10"],
+        "takeoff_ends": ["28"]
+      }
+      ]
+    },
+    "SLSV": {
+      "name": "Stormville Airfield",
+      "sender": "SLSV ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
+      "frequency": 119200,
+      "tower_frequency": 127375, 
+      "ground_frequency": 121625, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLFJ": {
+      "name": "FjellMark Field",
+      "sender": "SLFJ ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
+      "frequency": 119200,
+      "tower_frequency": 120025, 
+      "ground_frequency": 121700, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLTO": {
+      "name": "Toka Airfield",
+      "sender": "SLTO ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
+      "frequency": 119200,
+      "tower_frequency": 128800, 
+      "ground_frequency": 121750, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLSQ": {
+      "name": "Snug Harbor Field",
+      "sender": "SLSQ ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 122800, 
+      "landings": ["36"],
+      "departures": ["18"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["36"],
+        "takeoff_ends": ["18"]
+      }
+      ]
+    },
+    "SLAB": {
+      "name": "Sailors Cove Airfield",
+      "sender": "SLAB ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 123400, 
+      "ground_frequency": 121625, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLHS": {
+      "name": "Le Chateau Hamptons Aeroclub",
+      "sender": "SLHS ATC",
+      "weather_zone": "SECOND_NORWAY_COOL",
+      "frequency": 119200,
+      "tower_frequency": 120700, 
+      "ground_frequency": 120700, 
+      "landings": ["19","36"],
+      "departures": ["36","19"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["19","36"],
+        "takeoff_ends": ["36","19"]
+      }
+      ]
+    },
+    "SLAC": {
+      "name": "Rainforest Airfield",
+      "sender": "SLAC ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 123475, 
+      "ground_frequency": 123475, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLTH": {
+      "name": "Town House Airport",
+      "sender": "SLTH ATC",
+      "weather_zone": "CENTRAL_MAINLAND",
+      "frequency": 119200,
+      "tower_frequency": 122975, 
+      "ground_frequency": 121925, 
+      "landings": ["18L"],
+      "departures": ["36L"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["18L"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": ["36L"]
+      }
+      ]
+    },
+    "SLEO": {
+      "name": "Angels E1",
+      "sender": "SLEO ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 120525, 
+      "ground_frequency": 121725, 
+      "landings": ["09L","09C","09R"],
+      "departures": ["27L","27C","27R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["09L"],
+        "takeoff_ends": ["27R"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["09R"],
+        "takeoff_ends": ["27L"]
+      },
+      {
+        "id": "RWY_C",
+        "physical_id": "RWY_C",
+        "landing_ends": ["09C"],
+        "takeoff_ends": ["27C"]
+      }
+      ]
+    },
+    "SLEP": {
+      "name": "Angels E2",
+      "sender": "SLEP ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 128300, 
+      "ground_frequency": 121600, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLEQ": {
+      "name": "Angels E3",
+      "sender": "SLEQ ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 127650, 
+      "ground_frequency": 121600, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLBK": {
+      "name": "Heart Of The Blake Sea Airfield",
+      "sender": "SLBK ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 122800, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLHX": {
+      "name": "HXI Airstrip",
+      "sender": "SLHX ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 124225, 
+      "ground_frequency": 124225, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",      
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    }
+  }
+}
