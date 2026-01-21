@@ -3,6 +3,7 @@ import time
 import json
 import random
 import re
+import uuid
 from collections import deque
 
 
@@ -65,7 +66,7 @@ CONDITION_CONFIGS = WEATHER_CONFIG.get("conditions", {})
 WEATHER_ZONES: dict[str, list[str]] = {}
 WEATHER_STATE: dict[str, dict] = {}
 
-
+SERVER_INSTANCE_ID = str(uuid.uuid4())
 
 # Per-frequency storage
 channels = {}
@@ -979,6 +980,7 @@ def index():
     cleanup_expired_frequencies()
     return jsonify({
         "status": "online",
+        "instance_id": SERVER_INSTANCE_ID,
         "active_frequencies": len(channels)
     })
 
@@ -1090,7 +1092,10 @@ def fetch_messages():
     since_id = int(request.args.get("since_id", 0))
 
     if freq not in channels:
-        return jsonify([])
+        return jsonify({
+            "instance_id": SERVER_INSTANCE_ID,
+            "messages": []
+        })
 
     channel = get_channel(freq)
 
@@ -1099,7 +1104,10 @@ def fetch_messages():
         if m["id"] > since_id
     ]
 
-    return jsonify(msgs)
+    return jsonify({
+        "instance_id": SERVER_INSTANCE_ID,
+        "messages": msgs
+    })
 
 @app.route("/weather", methods=["POST"])
 def get_weather():
