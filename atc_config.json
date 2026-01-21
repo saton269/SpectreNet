@@ -99,18 +99,24 @@
       "filing ifr flight plan"
     ],
     "responses": [
-      "{CALLSIGN}, {AIRPORT} Tower, flight plan received. Advise ready for departure.",
-      "{CALLSIGN}, {AIRPORT} Tower, your flight plan is on file. Advise ready for departure.",
-      "{CALLSIGN}, {AIRPORT} Tower, flight plan copied. Report ready for departure."
+      "{CALLSIGN}, flight plan received. Advise ready for departure.",
+      "{CALLSIGN}, your flight plan is on file. Advise ready for departure.",
+      "{CALLSIGN}, flight plan copied. Report ready for departure.",
+      "{CALLSIGN}, flight plan to {DESTINATION} is on file.",
+      "{CALLSIGN}, your flight plan to {DESTINATION} has been received.",
+      "{CALLSIGN}, {DESTINATION} bound flight plan received.",
+      "{CALLSIGN}, flight plan from {ORIGIN} to {DESTINATION} received.",
+      "{CALLSIGN}, copy flight plan {ORIGIN} to {DESTINATION}, you are on our board.",
+      "{CALLSIGN}, we have your flight plan from {ORIGIN} to {DESTINATION}."
     ]
   },
 
   "flight_plan_departure_handoff": {
     "chance": 0.6,
     "responses": [
-      "After departure, contact {AIRPORT} Tower on {FREQUENCY}.",
-      "On departure, tune {AIRPORT} Tower on {FREQUENCY}.",
-      "When leaving the pattern, contact {AIRPORT} Tower on {FREQUENCY}."
+      "After departure, contact {DESTINATION} Tower on {FREQUENCY}.",
+      "On departure, tune {DESTINATION} Tower on {FREQUENCY}.",
+      "When leaving the pattern, contact {DESTINATION} Tower on {FREQUENCY}."
     ]
   },
 

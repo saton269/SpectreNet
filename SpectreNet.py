@@ -77,12 +77,24 @@ VALID_ENDS_BY_ACTION: dict[str, dict[str, set[str]]] = {}
 
 # Airport+callsign -> timestamp (or just flag) for active flight plans
 ACTIVE_FLIGHT_PLANS: dict[tuple[str, str], float] = {}
+# (airport_code, CALLSIGN) -> {"origin": ..., "destination": ...}
+FLIGHT_PLAN_ROUTES: dict[tuple[str, str], dict] = {}
+
 
 
 DEFAULT_FREQUENCY = 16
 
 RUNWAY_RE = re.compile(r"\b(?:runway|rwy)\s*([0-3]?\d)\s*([LRC])?\b", re.IGNORECASE)
 PILOT_ASSIGNED_RUNWAY = {}
+
+ROUTE_PATTERN = re.compile(
+    r"\b([A-Z0-9]{3,4})\s*(?:>|to|-|–)\s*([A-Z0-9]{3,4})\b",
+    re.IGNORECASE
+)
+DEST_ONLY_PATTERN = re.compile(
+    r"\bto\s+([A-Z0-9]{3,4})\b",
+    re.IGNORECASE,
+)
 
 
 MAX_MESSAGES = 100  # keep list small
@@ -496,6 +508,21 @@ def is_flight_plan_request(request_text: str) -> bool:
             return True
     return False
 
+def extract_route(text: str, fallback_origin: str):
+    """
+    Returns (origin, destination)
+    """
+    m = ROUTE_PATTERN.search(text)
+    if m:
+        return m.group(1).upper(), m.group(2).upper()
+    
+    m = DEST_ONLY_PATTERN.search(text)
+    if m:
+        return fallback_origin.upper(), m.group(1).upper()
+
+    # 3) Nothing found
+    return fallback_origin.upper(), None
+
 def process_runway_sequencing():
     if not SEQUENCING.get("enabled", False):
         return
@@ -712,15 +739,33 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     if is_flight_plan_request(request_text):
         # Mark this callsign as having a flight plan at this airport
         ACTIVE_FLIGHT_PLANS[(airport_code, callsign.upper())] = time.time()
+        FLIGHT_PLAN_ROUTES[(airport_code, callsign.upper())] = {
+        "origin": origin,
+        "destination": destination,
+    }
+        origin, destination = extract_route(original_request_text, airport_code)
 
-        if FP_RESPONSES:
-            template = random.choice(FP_RESPONSES)
-            fp_text = template.format(
-                CALLSIGN=callsign,
-                AIRPORT=airport_code,
-            )
-        else:
-            fp_text = f"{callsign}, {airport_code} Tower, flight plan received."
+        usable_templates = []
+
+        for t in FP_RESPONSES:
+            if "{DESTINATION}" in t:
+                if destination:
+                    usable_templates.append(t)
+            else:
+                usable_templates.append(t)
+
+        # Fallback safety
+        if not usable_templates:
+            usable_templates = FP_RESPONSES
+
+        template = random.choice(usable_templates)
+
+        fp_text = template.format(
+            CALLSIGN=callsign,
+            AIRPORT=airport_code,
+            ORIGIN=origin or airport_code,
+            DESTINATION=destination or "",
+        )
 
         fp_text = fp_text[0].upper() + fp_text[1:]
 
@@ -926,6 +971,8 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 # --- Flight plan departure handoff (Tower, takeoff only) ---
                 if action == "takeoff" and role == "tower":
                     key = (airport_code, callsign.upper())
+                    route_info = FLIGHT_PLAN_ROUTES.pop(key, None)
+
                     if key in ACTIVE_FLIGHT_PLANS:
                         # Drop the plan as soon as we issue a takeoff clearance
                         ACTIVE_FLIGHT_PLANS.pop(key, None)
@@ -933,13 +980,35 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         if FP_HANDOFF_RESPONSES and FP_HANDOFF_CHANCE > 0.0:
                             if random.random() < FP_HANDOFF_CHANCE:
                                 handoff_template = random.choice(FP_HANDOFF_RESPONSES)
-                                tower_freq_for_handoff = tower.get(
+                                # Default: handoff is back to the *current* airport tower
+                                handoff_airport = airport_code
+                                handoff_freq = tower.get(
                                     "tower_frequency",
                                     tower.get("frequency", DEFAULT_FREQUENCY)
                                 )
-                                freq_str = format_freq(tower_freq_for_handoff)
+
+                                # If we have a destination from the flight plan, try to hand off there instead
+                                dest_icao = None
+                                if route_info:
+                                    dest_icao = route_info.get("destination")
+
+                                if dest_icao:
+                                    dest_tower = ATC_TOWERS.get(dest_icao.upper())
+                                    if dest_tower:
+                                        dest_freq = dest_tower.get(
+                                            "tower_frequency",
+                                            dest_tower.get("frequency", DEFAULT_FREQUENCY)
+                                        )
+                                        if dest_freq:
+                                            handoff_airport = dest_icao.upper()
+                                            handoff_freq = dest_freq
+
+                                freq_str = format_freq(handoff_freq)
+
+                                # Allow templates to use AIRPORT and/or DESTINATION for the handoff airport
                                 handoff_text = handoff_template.format(
-                                    AIRPORT=airport_code,
+                                    AIRPORT=handoff_airport,
+                                    DESTINATION=handoff_airport,
                                     FREQUENCY=freq_str,
                                 )
                                 response_text = f"{response_text}, {handoff_text}"
