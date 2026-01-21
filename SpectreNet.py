@@ -127,7 +127,9 @@ def can_transmit_on_frequency(freq, sender_uuid):
 
     # Future: other modes, but default to no if unknown
     return False
-
+#------------------------------------
+# RUNWAY HELPERS
+#------------------------------------
 def build_runway_indexes():
     for icao, tower in ATC_TOWERS.items():
         icao_u = icao.upper()
@@ -217,7 +219,6 @@ def physical_id_for_runway_end(tower: dict, runway_end: str) -> str | None:
             return r.get("physical_id") or r.get("id")
     return None
 
-
 def init_weather_zones():
     for icao, ap in ATC_TOWERS.items():
         zone_name = ap.get("weather_zone") or icao.upper()
@@ -228,13 +229,11 @@ def init_weather_zones():
         if zone_name not in WEATHER_STATE:
             WEATHER_STATE[zone_name] = make_initial_weather_state(zone_name)
 
-
 def get_zone_defaults(zone_name: str) -> dict:
     zone_cfg = ZONE_CONFIGS.get(zone_name, {})
     cfg = ZONE_DEFAULTS.copy()
     cfg.update(zone_cfg)
     return cfg
-
 
 def make_initial_weather_state(zone_name: str) -> dict:
     cfg = get_zone_defaults(zone_name)
@@ -264,7 +263,6 @@ def make_initial_weather_state(zone_name: str) -> dict:
 def step_value(value, step, min_v, max_v):
     return max(min_v, min(max_v, value + random.randint(-step, step)))
 
-
 def pick_next_condition(current: str) -> str:
     cfg = CONDITION_CONFIGS.get(current, {})
     transitions = cfg.get("transition", [])
@@ -275,7 +273,6 @@ def pick_next_condition(current: str) -> str:
 
     # If none hit, stay where we are
     return current
-
 
 def update_zone_weather(state: dict):
     cfg = get_zone_defaults(state["zone"])
@@ -334,7 +331,6 @@ def get_weather_for_airport(icao: str) -> dict | None:
     state["zone"] = zone
     return state
 
-
 def format_weather_report(icao: str) -> str | None:
     """
     Build a human-friendly weather string for an airport using the
@@ -365,7 +361,6 @@ def update_all_weather():
     for zone_name, state in WEATHER_STATE.items():
         if now - state.get("last_update", 0) >= WEATHER_UPDATE_INTERVAL:
             update_zone_weather(state)
-
 
 def cleanup_expired_frequencies():
     now = time.time()
@@ -501,7 +496,6 @@ def is_flight_plan_request(request_text: str) -> bool:
             return True
     return False
 
-
 def process_runway_sequencing():
     if not SEQUENCING.get("enabled", False):
         return
@@ -569,7 +563,6 @@ def process_runway_sequencing():
                         "sender": entry["sender"],
                     })
                     ch["next_id"] += 1
-
 
 # ---------------------------
 # ATC Bot Logic

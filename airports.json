@@ -352,6 +352,50 @@
         "takeoff_ends": ["36"]
       }
       ]
+    },
+    "SLBH": {
+      "name": "Bruissac Harbor",
+      "sender": "SLBH ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 121625, 
+      "landings": ["18R"],
+      "departures": ["36R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["18R"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": ["36R"]
+      }
+      ]
+    },
+    "SLKF": {
+      "name": "Acknefar Airport",
+      "sender": "SLKF ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 126750, 
+      "ground_frequency": 121800, 
+      "landings": ["36"],
+      "departures": ["18"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["36"],
+        "takeoff_ends": ["18"]
+      }
+      ]
     }
   }
 }
