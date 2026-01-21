@@ -770,7 +770,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         fp_text = fp_text[0].upper() + fp_text[1:]
 
         # Always respond as Tower for flight plans
-        fp_sender = tower.get("tower_sender", f"{airport_code} Tower")
+        fp_sender = tower.get("sender", f"{airport_code} Tower")
         return fp_text, fp_sender
 
     # =========================================================
