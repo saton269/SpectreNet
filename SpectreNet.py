@@ -56,13 +56,11 @@ FP_RESPONSES = FLIGHT_PLAN_CONFIG.get("responses", [])
 FP_HANDOFF_CONFIG = atc_config.get("flight_plan_departure_handoff", {})
 FP_HANDOFF_RESPONSES = FP_HANDOFF_CONFIG.get("responses", [])
 FP_HANDOFF_CHANCE = float(FP_HANDOFF_CONFIG.get("chance", 0.0))
-
-
+FLIGHT_PLAN_TTL_SECONDS = 60 * 60
 
 ZONE_DEFAULTS = WEATHER_CONFIG.get("defaults", {})
 ZONE_CONFIGS = WEATHER_CONFIG.get("zones", {})
 CONDITION_CONFIGS = WEATHER_CONFIG.get("conditions", {})
-
 WEATHER_ZONES: dict[str, list[str]] = {}
 WEATHER_STATE: dict[str, dict] = {}
 
@@ -80,8 +78,6 @@ ACTIVE_FLIGHT_PLANS: dict[tuple[str, str], float] = {}
 # (airport_code, CALLSIGN) -> {"origin": ..., "destination": ...}
 FLIGHT_PLAN_ROUTES: dict[tuple[str, str], dict] = {}
 
-
-
 DEFAULT_FREQUENCY = 16
 
 RUNWAY_RE = re.compile(r"\b(?:runway|rwy)\s*([0-3]?\d)\s*([LRC])?\b", re.IGNORECASE)
@@ -95,7 +91,6 @@ DEST_ONLY_PATTERN = re.compile(
     r"\bto\s+([A-Z0-9]{3,4})\b",
     re.IGNORECASE,
 )
-
 
 MAX_MESSAGES = 100  # keep list small
 FREQUENCY_EXPIRE_SECONDS = 30 * 60  # 30 minutes
@@ -373,6 +368,25 @@ def update_all_weather():
     for zone_name, state in WEATHER_STATE.items():
         if now - state.get("last_update", 0) >= WEATHER_UPDATE_INTERVAL:
             update_zone_weather(state)
+
+def cleanup_stale_flight_plans(now: float | None = None):
+    """
+    Remove flight plans that are older than FLIGHT_PLAN_TTL_SECONDS.
+    Uses ACTIVE_FLIGHT_PLANS as the timestamp source and also clears
+    matching entries in FLIGHT_PLAN_ROUTES.
+    """
+    if now is None:
+        now = time.time()
+
+    if not ACTIVE_FLIGHT_PLANS:
+        return
+
+    # We need list(...) so we can modify the dict while iterating
+    for key, ts in list(ACTIVE_FLIGHT_PLANS.items()):
+        if now - ts > FLIGHT_PLAN_TTL_SECONDS:
+            # key is (airport_code, CALLSIGN)
+            ACTIVE_FLIGHT_PLANS.pop(key, None)
+            FLIGHT_PLAN_ROUTES.pop(key, None)
 
 def cleanup_expired_frequencies():
     now = time.time()
