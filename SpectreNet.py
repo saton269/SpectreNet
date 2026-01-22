@@ -512,13 +512,13 @@ def extract_route(text: str, fallback_origin: str):
     """
     Returns (origin, destination)
     """
-    m = ROUTE_PATTERN.search(text)
-    if m:
-        return m.group(1).upper(), m.group(2).upper()
-    
     m = DEST_ONLY_PATTERN.search(text)
     if m:
         return fallback_origin.upper(), m.group(1).upper()
+
+    m = ROUTE_PATTERN.search(text)
+    if m:
+        return m.group(1).upper(), m.group(2).upper()
 
     # 3) Nothing found
     return fallback_origin.upper(), None
@@ -772,7 +772,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         fp_text = fp_text[0].upper() + fp_text[1:]
 
         # Always respond as Tower for flight plans
-        fp_sender = tower.get("sender", f"{airport_code} Tower")
+        fp_sender = tower.get("sender", f"{airport_code} ATC")
         return fp_text, fp_sender
 
     # =========================================================
