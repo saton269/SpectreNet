@@ -50,7 +50,7 @@ OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
 INVALID_RUNWAY_MESSAGES = atc_config.get("invalid_runway", {})
 EMERGENCY_TRIGGERS = atc_config.get("emergency_triggers", {})
-POSSIBLE_EMERGENCY_TRIGGERS = atc_config.get("possible_emergency_triggers", [])
+POSSIBLE_EMERGENCY_TRIGGERS = EMERGENCY_TRIGGERS.get("possible_emergency_triggers", [])
 
 FLIGHT_PLAN_CONFIG = atc_config.get("flight_plan", {})
 FP_TRIGGERS = [t.lower() for t in FLIGHT_PLAN_CONFIG.get("triggers", [])]
@@ -929,8 +929,10 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
             # Prefer tower if this handler has tower_freq, otherwise ground
             if (is_tower_request and not is_flight_plan_request(original_request_text)):
                 correct_freq = tower_freq
+                sender_role = tower.get("tower_sender", f"{airport_code} Tower")
             elif (is_ground_request and not is_flight_plan_request(original_request_text)):
                 correct_freq = ground_freq
+                sender_role = tower.get("ground_sender", f"{airport_code} Ground")
             else:
                 return None
 
@@ -941,8 +943,10 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 REQUESTED_AIRPORT=airport_code,
                 FREQUENCY=freq_str
             )
+            full_text = f"{callsign}, {response_text}"
 
-            return f"{callsign}, {response_text}"
+            full_text = full_text[0].upper() + full_text[1:]
+            return full_text, sender_role
 
 
     # =========================================================
