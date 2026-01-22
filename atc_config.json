@@ -253,19 +253,19 @@
       "startup approved, advise ready to taxi."
     ],
     "emergency_ack_mayday": [
-      "{CALLSIGN}, roger, MAYDAY received.",
-      "{CALLSIGN}, MAYDAY acknowledged, you have priority.",
-      "{CALLSIGN}, roger, emergency traffic, you are priority."
+      "roger, MAYDAY received.",
+      "MAYDAY acknowledged, you have priority.",
+      "roger, emergency traffic, you are priority."
     ],
     "emergency_ack_pan": [
-      "{CALLSIGN}, roger, PAN PAN acknowledged.",
-      "{CALLSIGN}, PAN PAN received, you have priority.",
-      "{CALLSIGN}, roger, traffic will be held for you."
+      "roger, PAN PAN acknowledged.",
+      "PAN PAN received, you have priority.",
+      "roger, traffic will be held for you."
     ],
     "emergency_ack_generic": [
-      "{CALLSIGN}, roger, emergency acknowledged.",
-      "{CALLSIGN}, copy your emergency, you have priority.",
-      "{CALLSIGN}, roger, we’ll get you straight in."
+      "roger, emergency acknowledged.",
+      "copy your emergency, you have priority.",
+      "roger, we’ll get you straight in."
     ]
   },
 
@@ -287,10 +287,10 @@
       "{callsign}, cleared for takeoff runway {runway}, proceed."
     ],
     "emergency_landing_clearance": [
-      "{callsign}, you are cleared to land runway {landings}, runway is clear.",
-      "{callsign}, cleared to land runway {landings}, emergency traffic, no delay.",
-      "{callsign}, cleared to land runway {kandings}, emergency crews standing by.",
-      "{callsign}, runway {landings} is clear, cleared to land."
+      "you are cleared to land runway {landings}, runway is clear.",
+      "cleared to land runway {landings}, emergency traffic, no delay.",
+      "cleared to land runway {kandings}, emergency crews standing by.",
+      "runway {landings} is clear, cleared to land."
     ]
   },
 
