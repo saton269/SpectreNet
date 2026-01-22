@@ -90,6 +90,11 @@
         "{callsign}, hold short runway {runway}, landing traffic.",
         "{callsign}, remain holding short, departure sequence active.",
         "{callsign}, hold short runway {runway}, clearance pending."
+      ],
+      "emergency_hold_traffic": [
+        "All stations, emergency traffic inbound, hold position.",
+        "All aircraft, hold short of all runways, emergency landing in progress.",
+        "All traffic, expect delay, emergency aircraft inbound."
       ]
     }
 },
@@ -246,6 +251,21 @@
       "startup authorized when ready.",
       "you are cleared to start engines.",
       "startup approved, advise ready to taxi."
+    ],
+    "emergency_ack_mayday": [
+      "{CALLSIGN}, roger, MAYDAY received.",
+      "{CALLSIGN}, MAYDAY acknowledged, you have priority.",
+      "{CALLSIGN}, roger, emergency traffic, you are priority."
+    ],
+    "emergency_ack_pan": [
+      "{CALLSIGN}, roger, PAN PAN acknowledged.",
+      "{CALLSIGN}, PAN PAN received, you have priority.",
+      "{CALLSIGN}, roger, traffic will be held for you."
+    ],
+    "emergency_ack_generic": [
+      "{CALLSIGN}, roger, emergency acknowledged.",
+      "{CALLSIGN}, copy your emergency, you have priority.",
+      "{CALLSIGN}, roger, we’ll get you straight in."
     ]
   },
 
@@ -265,6 +285,43 @@
       "{callsign}, departure traffic clear, runway {runway} cleared for takeoff.",
       "{callsign}, runway {runway} open, cleared for departure.",
       "{callsign}, cleared for takeoff runway {runway}, proceed."
+    ],
+    "emergency_landing_clearance": [
+      "{callsign}, you are cleared to land runway {runway}, runway is clear.",
+      "{callsign}, cleared to land runway {runway}, emergency traffic, no delay.",
+      "{callsign}, cleared to land runway {runway}, emergency crews standing by.",
+      "{callsign}, runway {runway} is clear, cleared to land."
+    ]
+  },
+
+  "emergency_triggers": {
+    "mayday": [
+      "mayday"
+    ],
+    "pan": [
+      "pan pan",
+      "pan-pan",
+      "panpan"
+    ],
+    "generic": [
+      "emergency",
+      "engine failure",
+      "engine out",
+      "fuel emergency",
+      "fuel low",
+      "smoke in cockpit",
+      "smoke",
+      "fire",
+      "medical emergency",
+      "medical"
+    ],
+    "possible_emergency_triggers": [
+      "engine failure",
+      "engine out",
+      "fuel low",
+      "smoke",
+      "fire",
+      "medical"
     ]
   },
 

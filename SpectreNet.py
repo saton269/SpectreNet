@@ -49,6 +49,8 @@ SEQUENCING = atc_config.get("sequencing", {})
 OCCUPANCY = SEQUENCING.get("occupancy_seconds", {})
 HOLD_MESSAGES = SEQUENCING.get("holds", {})
 INVALID_RUNWAY_MESSAGES = atc_config.get("invalid_runway", {})
+EMERGENCY_TRIGGERS = atc_config.get("emergency_triggers", {})
+POSSIBLE_EMERGENCY_TRIGGERS = atc_config.get("possible_emergency_triggers", [])
 
 FLIGHT_PLAN_CONFIG = atc_config.get("flight_plan", {})
 FP_TRIGGERS = [t.lower() for t in FLIGHT_PLAN_CONFIG.get("triggers", [])]
@@ -57,7 +59,6 @@ FP_RESPONSES = FLIGHT_PLAN_CONFIG.get("responses", [])
 FP_HANDOFF_CONFIG = atc_config.get("flight_plan_departure_handoff", {})
 FP_HANDOFF_RESPONSES = FP_HANDOFF_CONFIG.get("responses", [])
 FP_HANDOFF_CHANCE = float(FP_HANDOFF_CONFIG.get("chance", 0.0))
-FLIGHT_PLAN_TTL_SECONDS = 60 * 60
 
 ZONE_DEFAULTS = WEATHER_CONFIG.get("defaults", {})
 ZONE_CONFIGS = WEATHER_CONFIG.get("zones", {})
@@ -78,6 +79,10 @@ VALID_ENDS_BY_ACTION: dict[str, dict[str, set[str]]] = {}
 ACTIVE_FLIGHT_PLANS: dict[tuple[str, str], float] = {}
 # (airport_code, CALLSIGN) -> {"origin": ..., "destination": ...}
 FLIGHT_PLAN_ROUTES: dict[tuple[str, str], dict] = {}
+FLIGHT_PLAN_TTL_SECONDS = 60 * 60
+
+ACTIVE_EMERGENCIES: dict[tuple[str, str], dict] = {}
+EMERGENCY_TTL_SECONDS = 5 * 60  # auto-expire after 5 minutes
 
 DEFAULT_FREQUENCY = 16
 
@@ -135,6 +140,61 @@ def can_transmit_on_frequency(freq, sender_uuid):
 
     # Future: other modes, but default to no if unknown
     return False
+
+#------------------------------------
+# EMERGENCY HELPERS
+#------------------------------------
+EMERGENCY_TYPE_NONE = "none"
+EMERGENCY_TYPE_MAYDAY = "mayday"
+EMERGENCY_TYPE_PAN = "pan"
+EMERGENCY_TYPE_GENERIC = "generic"
+
+def _contains_phrase(text: str, phrase: str) -> bool:
+    """
+    Case-insensitive substring match with whitespace normalization.
+    """
+    return phrase in text
+
+
+def detect_emergency_type(text: str) -> str:
+    """
+    Detect emergency type based purely on JSON-defined trigger phrases.
+    Priority order:
+      MAYDAY > PAN > GENERIC
+    """
+    if not text:
+        return EMERGENCY_TYPE_NONE
+
+    t = text.lower()
+
+    # MAYDAY has highest priority
+    for phrase in EMERGENCY_TRIGGERS.get("mayday", []):
+        if _contains_phrase(t, phrase.lower()):
+            return EMERGENCY_TYPE_MAYDAY
+
+    # PAN PAN next
+    for phrase in EMERGENCY_TRIGGERS.get("pan", []):
+        if _contains_phrase(t, phrase.lower()):
+            return EMERGENCY_TYPE_PAN
+
+    # Generic emergency last
+    for phrase in EMERGENCY_TRIGGERS.get("generic", []):
+        if _contains_phrase(t, phrase.lower()):
+            return EMERGENCY_TYPE_GENERIC
+
+    return EMERGENCY_TYPE_NONE
+
+def sounds_like_possible_emergency(text: str) -> bool:
+    if not text:
+        return False
+
+    t = text.lower()
+    for phrase in POSSIBLE_EMERGENCY_TRIGGERS:
+        if phrase.lower() in t:
+            return True
+    return False
+
+
 #------------------------------------
 # RUNWAY HELPERS
 #------------------------------------
@@ -465,6 +525,41 @@ def update_all_weather():
         if now - state.get("last_update", 0) >= WEATHER_UPDATE_INTERVAL:
             update_zone_weather(state)
 
+def record_emergency(airport_code: str, callsign: str, emergency_type: str, runway: str | None = None):
+    """
+    Store an active emergency for this airport + callsign.
+    """
+    key = (airport_code.upper(), callsign.upper())
+    ACTIVE_EMERGENCIES[key] = {
+        "type": emergency_type,
+        "runway": runway,
+        "started_at": time.time(),
+    }
+
+
+def get_active_emergency(airport_code: str, callsign: str) -> dict | None:
+    return ACTIVE_EMERGENCIES.get((airport_code.upper(), callsign.upper()))
+
+
+def clear_emergency(airport_code: str, callsign: str):
+    ACTIVE_EMERGENCIES.pop((airport_code.upper(), callsign.upper()), None)
+
+
+def cleanup_stale_emergencies(now: float | None = None):
+    """
+    Auto-expire emergencies that have been around longer than EMERGENCY_TTL_SECONDS.
+    """
+    if now is None:
+        now = time.time()
+    if not ACTIVE_EMERGENCIES:
+        return
+
+    for key, info in list(ACTIVE_EMERGENCIES.items()):
+        started = info.get("started_at", now)
+        if now - started > EMERGENCY_TTL_SECONDS:
+            ACTIVE_EMERGENCIES.pop(key, None)
+
+
 def cleanup_stale_flight_plans(now: float | None = None):
     """
     Remove flight plans that are older than FLIGHT_PLAN_TTL_SECONDS.
@@ -722,6 +817,10 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     original_request_text = request_text
     request_text = request_text.lower()
 
+    # --- Emergency detection based on the original (case-preserved) text ---
+    emergency_type = detect_emergency_type(original_request_text)
+    has_emergency = emergency_type != EMERGENCY_TYPE_NONE
+
     requested_runway = parse_requested_runway(request_text)  # e.g. "27L"
     pilot_key = (airport_code, callsign)
 
@@ -813,31 +912,38 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
     # =========================================================
     # 2) If the tuned frequency doesn't belong to this airport
+    #    (Emergencies are allowed to bypass this)
     # =========================================================
     if channel not in (tower_freq, ground_freq):
-        responses = REDIRECT_MESSAGES.get("wrong_airport_frequency", [])
-        if not responses:
-            return None
-
-        template = random.choice(responses)
-
-        # Prefer tower if this handler has tower_freq, otherwise ground
-        if(is_tower_request and not is_flight_plan_request(original_request_text)):
-            correct_freq = tower_freq
-        elif(is_ground_request and not is_flight_plan_request(original_request_text)):
-            correct_freq = ground_freq
+        # For emergencies, treat as if they reached this airport's ATC anyway
+        if has_emergency:
+            # We just continue without redirecting; role will default to Tower.
+            pass
         else:
-            return None
-        #correct_freq = tower_freq or ground_freq
-        freq_str = format_freq(correct_freq)
+            responses = REDIRECT_MESSAGES.get("wrong_airport_frequency", [])
+            if not responses:
+                return None
 
-        response_text = template.format(
-            CALLSIGN=callsign,
-            REQUESTED_AIRPORT=airport_code,
-            FREQUENCY=freq_str
-        )
+            template = random.choice(responses)
 
-        return f"{callsign}, {response_text}"
+            # Prefer tower if this handler has tower_freq, otherwise ground
+            if (is_tower_request and not is_flight_plan_request(original_request_text)):
+                correct_freq = tower_freq
+            elif (is_ground_request and not is_flight_plan_request(original_request_text)):
+                correct_freq = ground_freq
+            else:
+                return None
+
+            freq_str = format_freq(correct_freq)
+
+            response_text = template.format(
+                CALLSIGN=callsign,
+                REQUESTED_AIRPORT=airport_code,
+                FREQUENCY=freq_str
+            )
+
+            return f"{callsign}, {response_text}"
+
 
     # =========================================================
     # 3) Determine role based on the frequency we are actually tuned to
@@ -900,7 +1006,14 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         for phrase in phrases:
             if phrase in request_text:
 
-                template = random.choice(ATC_RESPONSES[action])
+                # --- Pick base response template (emergencies use special landing phrasing) ---
+                if has_emergency and action == "landing":
+                    # Use emergency landing templates from auto_clear if present; fall back to normal landing
+                    templates_pool = AUTO_CLEAR_RESPONSES.get("emergency_landing_clearance") or ATC_RESPONSES[action]
+                else:
+                    templates_pool = ATC_RESPONSES[action]
+
+                template = random.choice(templates_pool)
 
                 # --------------------------------------------------
                 # Runway selection (now using JSON runway config)
@@ -980,7 +1093,14 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     runway = base_choices[0] if base_choices else ""
 
                 # --------------------------------------------------
+                # Emergency bookkeeping: record which runway we gave them
+                # --------------------------------------------------
+                if has_emergency and action == "landing" and runway:
+                    record_emergency(airport_code, callsign, emergency_type, runway)
+
+                                # --------------------------------------------------
                 # Runway sequencing (landing / takeoff only)
+                # Emergencies are allowed to override existing occupancy.
                 # --------------------------------------------------
                 if (
                     SEQUENCING.get("enabled", True)
@@ -992,16 +1112,19 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     runway_key = logical_runway_id or runway or "DEFAULT"
                     state = get_runway_state(airport_code, runway_key)
 
-                    # Runway currently occupied → HOLD and queue
-                    if runway_active(state):
-                        entry = {
-                            "airport": airport_code,
-                            "runway": runway,    # end used in messages
-                            "callsign": callsign,
-                            "action": action,
-                            "frequency": channel,
-                            "sender": sender_name,
-                        }
+                    occupy = OCCUPANCY.get(action, 30)
+                    entry = {
+                        "airport": airport_code,
+                        "runway": runway,    # end used in messages
+                        "callsign": callsign,
+                        "action": action,
+                        "frequency": channel,
+                        "sender": sender_name,
+                        "emergency": has_emergency,
+                    }
+
+                    if runway_active(state) and not has_emergency:
+                        # Normal traffic: hold and queue behind existing aircraft
                         state["queue"].append(entry)
 
                         position = len(state["queue"]) + 1
@@ -1019,25 +1142,15 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         hold_text = hold_text[0].upper() + hold_text[1:]
                         return hold_text, sender_name
 
-                    # Runway free → mark active
-                    occupy = OCCUPANCY.get(action, 30)
-                    set_runway_active(
-                        state,
-                        {
-                            "airport": airport_code,
-                            "runway": runway,
-                            "callsign": callsign,
-                            "action": action,
-                            "frequency": channel,
-                            "sender": sender_name,
-                        },
-                        occupy,
-                    )
+                    # Either runway is free OR this is an emergency:
+                    # mark it active for this aircraft (emergency overrides whoever was there).
+                    set_runway_active(state, entry, occupy)
 
-                        # --------------------------------------------------
-                        # If pilot requested an invalid runway, override with
-                        # a friendly "unable, use {runway}" style message
-                        # --------------------------------------------------
+
+                # --------------------------------------------------
+                # If pilot requested an invalid runway, override with
+                # a friendly "unable, use {runway}" style message
+                # --------------------------------------------------
                 # --------------------------------------------------
                 # Invalid runway request handling (JSON-driven)
                 # --------------------------------------------------
@@ -1130,11 +1243,40 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                                 )
                                 response_text = f"{response_text}, {handoff_text}"
 
+                # --- Emergency acknowledgements and traffic hold calls ---
+                if has_emergency and role == "tower" and action == "landing":
+                    # 1) Pick the right ack family
+                    if emergency_type == EMERGENCY_TYPE_MAYDAY:
+                        ack_pool = ATC_RESPONSES.get("emergency_ack_mayday", [])
+                    elif emergency_type == EMERGENCY_TYPE_PAN:
+                        ack_pool = ATC_RESPONSES.get("emergency_ack_pan", [])
+                    else:
+                        ack_pool = ATC_RESPONSES.get("emergency_ack_generic", [])
+
+                    if ack_pool:
+                        ack_template = random.choice(ack_pool)
+                        ack_text = ack_template.format(
+                            CALLSIGN=callsign,
+                            AIRPORT=airport_code,
+                        )
+                    else:
+                        ack_text = f"{callsign}, roger, emergency acknowledged."
+
+                    # 2) Optional broadcast-style traffic hold message
+                    emergency_hold_pool = HOLD_MESSAGES.get("emergency_hold_traffic", [])
+                    hold_broadcast = ""
+                    if emergency_hold_pool and random.random() < 0.6:
+                        hold_broadcast = " " + random.choice(emergency_hold_pool)
+
+                    # Stick ack in front, broadcast at the end
+                    response_text = f"{ack_text} {response_text}{hold_broadcast}".strip()
+
                 response = f"{callsign}, {response_text}"
                 capitalized = response[0].upper() + response[1:]
 
                 # Use per-role sender_name (Tower / Ground)
                 return capitalized, sender_name
+
 
     # =========================================================
     # 5) Fallback: unknown / unrecognized request on a valid freq
@@ -1218,6 +1360,8 @@ def send_message():
     cleanup_expired_frequencies()
     process_runway_sequencing()
     update_all_weather()
+    cleanup_stale_emergencies()
+    cleanup_stale_flight_plans()
 
     data = request.get_json(force=True)
 
