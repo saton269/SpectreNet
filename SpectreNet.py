@@ -629,7 +629,6 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     requested_runway = parse_requested_runway(request_text)  # e.g. "27L"
     pilot_key = (airport_code, callsign)
 
-
     tower = ATC_TOWERS.get(airport_code)
     if not tower:
         return None
@@ -658,83 +657,91 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     # =========================================================
 
     # A) Ground-style requests (taxi / startup) on TOWER frequency -> redirect to GROUND
-    if (
-        tower_freq != ground_freq
+    if (is_ground_request
+        and tower_freq != ground_freq
         and channel == tower_freq
-        and channel != ground_freq
     ):
-        is_ground_request = any(
+
+        # Special-case startup redirect if desired
+        is_startup_request = any(
             phrase in request_text
-            for action in ("taxi", "startup")
-            for phrase in TRIGGER_PHRASES.get(action, [])
+            for phrase in TRIGGER_PHRASES.get("startup", [])
         )
 
-        if is_ground_request:
-            # Special-case startup redirect if desired
-            is_startup_request = any(
-                phrase in request_text
-                for phrase in TRIGGER_PHRASES.get("startup", [])
-            )
-
-            if is_startup_request:
-                templates = REDIRECT_MESSAGES.get("startup_tower_to_ground", [])
-                # Fall back to generic tower_to_ground if startup-specific empty
-                if not templates:
-                    templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
-            else:
+        if is_startup_request:
+            templates = REDIRECT_MESSAGES.get("startup_tower_to_ground", [])
+            # Fall back to generic tower_to_ground if startup-specific empty
+            if not templates:
                 templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
+        else:
+            templates = REDIRECT_MESSAGES.get("tower_to_ground", [])
 
-            if templates:
-                template = random.choice(templates)
-                text = template.format(
-                    callsign=callsign,
-                    airport=airport_code,
-                    # These messages talk about CONTACT GROUND on {frequency}
-                    frequency=format_freq(ground_freq),
-                )
-                text = text[0].upper() + text[1:]
+        if templates:
+            template = random.choice(templates)
+            text = template.format(
+                callsign=callsign,
+                airport=airport_code,
+                # These messages talk about CONTACT GROUND on {frequency}
+                frequency=format_freq(ground_freq),
+            )
+            text = text[0].upper() + text[1:]
 
-                tower_sender = tower.get("tower_sender", f"{airport_code} Tower")
-                return text, tower_sender
+            tower_sender = tower.get("tower_sender", f"{airport_code} Tower")
+            return text, tower_sender
 
             # No templates? just ignore like before
-            return None
+        return None
 
     # B) Tower-style requests (takeoff / landing) on GROUND frequency -> redirect to TOWER
     if (
-        tower_freq != ground_freq
+        is_tower_request
+        and tower_freq != ground_freq
         and channel == ground_freq
-        and channel != tower_freq
     ):
-        is_tower_request = any(
-            phrase in request_text
-            for action in ("takeoff", "landing")
-            for phrase in TRIGGER_PHRASES.get(action, [])
-        )
 
-        if is_tower_request:
-            templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
-            if templates:
-                template = random.choice(templates)
-                text = template.format(
-                    callsign=callsign,
-                    airport=airport_code,
-                    # These messages talk about CONTACT TOWER on {frequency}
-                    frequency=format_freq(tower_freq),
-                )
-                text = text[0].upper() + text[1:]
+        templates = REDIRECT_MESSAGES.get("ground_to_tower", [])
+        if templates:
+            template = random.choice(templates)
+            text = template.format(
+                callsign=callsign,
+                airport=airport_code,
+                # These messages talk about CONTACT TOWER on {frequency}
+                frequency=format_freq(tower_freq),
+            )
+            text = text[0].upper() + text[1:]
 
-                ground_sender = tower.get("ground_sender", f"{airport_code} Ground")
-                return text, ground_sender
+            ground_sender = tower.get("ground_sender", f"{airport_code} Ground")
+            return text, ground_sender
 
-            return None
-
+        return None
 
     # =========================================================
-    # 2) If the tuned frequency doesn't belong to this airport, ignore
+    # 2) If the tuned frequency doesn't belong to this airport
     # =========================================================
     if channel not in (tower_freq, ground_freq):
-        return None
+        responses = REDIRECT_MESSAGES.get("wrong_airport_frequency", [])
+        if not responses:
+            return None
+
+        template = random.choice(responses)
+
+        # Prefer tower if this handler has tower_freq, otherwise ground
+        if(is_tower_request and not is_flight_plan_request(original_request_text)):
+            correct_freq = tower_freq
+        elif(is_ground_request and not is_flight_plan_request(original_request_text)):
+            correct_freq = ground_freq
+        else:
+            return None
+        #correct_freq = tower_freq or ground_freq
+        freq_str = format_freq(correct_freq)
+
+        response_text = template.format(
+            CALLSIGN=callsign,
+            REQUESTED_AIRPORT=airport_code,
+            FREQUENCY=freq_str
+        )
+
+        return f"{callsign}, {response_text}"
 
     # =========================================================
     # 3) Determine role based on the frequency we are actually tuned to
@@ -759,7 +766,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         FLIGHT_PLAN_ROUTES[(airport_code, callsign.upper())] = {
         "origin": origin,
         "destination": destination,
-    }
+        }
 
         usable_templates = []
 
@@ -954,8 +961,6 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                             invalid_text = invalid_text[0].upper() + invalid_text[1:]
                             return invalid_text, sender_name
 
-
-
                 # --- Build response text with runway/taxiway placeholders ---
                 if "{taxiway}" in template and "taxiways" in tower:
                     taxiway = random.choice(tower["taxiways"])
@@ -1052,7 +1057,6 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     # No unknown templates defined, behave like original: silent
     return None
 
-
 @app.route("/")
 def index():
     cleanup_expired_frequencies()
@@ -1104,7 +1108,6 @@ def get_state():
         "last_id": channel["next_id"] - 1
     })
 
-
 @app.route("/send", methods=["POST"])
 def send_message():
     cleanup_expired_frequencies()
@@ -1150,10 +1153,6 @@ def send_message():
         }
         channel["messages"].append(atc_msg)
         channel["next_id"] += 1
-
-    # message cap
-    if len(channel["messages"]) > MAX_MESSAGES:
-        channel["messages"].pop(0)
 
     return jsonify({
         "status": "sent",
@@ -1238,7 +1237,6 @@ def get_weather():
         "qnh": state.get("qnh"),
         "report": report
     })
-
 
 
 if __name__ == "__main__":

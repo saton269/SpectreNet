@@ -26,8 +26,14 @@
       "{callsign}, contact ground for startup clearance on {frequency}.",
       "{callsign}, startup is handled by ground. Switch to {frequency}.",
       "{callsign}, request acknowledged. Contact ground on {frequency}."
+    ],
+    "wrong_airport_frequency": [
+      "{CALLSIGN}, wrong frequency for {REQUESTED_AIRPORT}. Tune {FREQUENCY}.",
+      "{CALLSIGN}, this is not {REQUESTED_AIRPORT}. Contact them on {FREQUENCY}.",
+      "Negative {CALLSIGN}, you're on the wrong airport frequency. {REQUESTED_AIRPORT} is on {FREQUENCY}."
     ]
   },
+  
   "invalid_runway": {
     "takeoff": [
       "{callsign}, unable runway {requested}. Expect runway {runway}.",
