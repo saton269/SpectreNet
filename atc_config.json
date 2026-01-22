@@ -163,7 +163,9 @@
       "flightplan",
       "filing flight plan",
       "filing vfr flight plan",
-      "filing ifr flight plan"
+      "filing ifr flight plan",
+      "submitting flight plan",
+      "file flight plan"
     ],
     "responses": [
       "{CALLSIGN}, flight plan received. Advise ready for departure.",

@@ -5,6 +5,7 @@ import random
 import re
 import uuid
 from collections import deque
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -205,7 +206,6 @@ def runway_ends_for_action(tower: dict, action: str) -> set[str]:
 
     return ends
 
-
 def physical_id_for_runway_end(tower: dict, runway_end: str) -> str | None:
     """
     Map runway end (e.g. '27L') to runway physical_id using cached lookup.
@@ -337,6 +337,102 @@ def get_weather_for_airport(icao: str) -> dict | None:
     state = WEATHER_STATE[zone]
     state["zone"] = zone
     return state
+
+from datetime import datetime
+
+def format_metar_from_state(icao: str, state: dict | None) -> str | None:
+    """
+    Build a pseudo-METAR string from your simulated weather state.
+
+    Uses keys:
+      condition (e.g. "FEW")
+      visibility ("GOOD", "MODERATE", "POOR"...)
+      style ("VFR", "IFR"...)
+      wind_dir (degrees)
+      wind_speed (knots)
+      temp (°C)
+      qnh (hPa)
+    """
+    if not state:
+        return None
+
+    # Time: DDHHMMZ in UTC
+    now = datetime.utcnow()
+    time_str = now.strftime("%d%H%MZ")
+
+    # Wind
+    try:
+        wind_dir = int(state.get("wind_dir") or 0)
+    except (TypeError, ValueError):
+        wind_dir = 0
+
+    try:
+        wind_speed = int(state.get("wind_speed") or 0)
+    except (TypeError, ValueError):
+        wind_speed = 0
+
+    if wind_speed <= 1:
+        wind_str = "00000KT"
+    else:
+        wind_str = f"{wind_dir:03d}{wind_speed:02d}KT"
+
+    # Visibility buckets from your "visibility" string
+    vis_code = (state.get("visibility") or "").upper()
+    if vis_code == "GOOD":
+        vis_str = "10SM"
+    elif vis_code in ("MODERATE", "MOD"):
+        vis_str = "6SM"
+    elif vis_code in ("POOR", "LOW"):
+        vis_str = "3SM"
+    else:
+        vis_str = "10SM"
+
+    # Clouds from your "condition" string
+    cond = (state.get("condition") or "").upper()
+    if cond == "FEW":
+        clouds_str = "FEW020"
+    elif cond in ("SCT", "SCATTERED"):
+        clouds_str = "SCT025"
+    elif cond in ("BKN", "BROKEN"):
+        clouds_str = "BKN030"
+    elif cond in ("OVC", "OVERCAST"):
+        clouds_str = "OVC015"
+    elif cond in ("CLR", "CLEAR", "SKC"):
+        clouds_str = "SKC"
+    else:
+        clouds_str = "NSC"
+
+    # Temperature / (fake) dewpoint
+    try:
+        temp = int(state.get("temp"))
+    except (TypeError, ValueError):
+        temp = 18  # safe default
+
+    dew = temp - 6  # simple fake dewpoint; adjust if you like
+
+    def fmt_t(t: int) -> str:
+        if t < 0:
+            return f"M{abs(t):02d}"
+        return f"{t:02d}"
+
+    temp_str = fmt_t(temp)
+    dew_str = fmt_t(int(dew))
+
+    # QNH
+    try:
+        qnh = int(state.get("qnh"))
+    except (TypeError, ValueError):
+        qnh = 1015
+    qnh_str = f"Q{qnh:04d}"
+
+    # Flight rules
+    style = (state.get("style") or "").upper()
+    if style not in ("VFR", "MVFR", "IFR", "LIFR"):
+        style = "VFR"
+
+    # Final body: ICAO DDHHMMZ ...
+    return f"{icao} {time_str} {wind_str} {vis_str} {clouds_str} {temp_str}/{dew_str} {qnh_str} {style}"
+
 
 def format_weather_report(icao: str) -> str | None:
     """
@@ -1083,10 +1179,19 @@ def atc_lookup():
         freq = tower.get("tower_frequency", tower.get("frequency", DEFAULT_FREQUENCY))
         sender = tower.get("tower_sender", f"{airport} Tower")
 
+    update_all_weather()
+    state = get_weather_for_airport(airport)
+    metar = None
+    if state:
+        body = format_metar_from_state(airport, state)
+        if body:
+            metar = f"METAR {body}"
+
     return jsonify({
         "airport": airport,
         "frequency": freq,
-        "sender": sender
+        "sender": sender,
+        "metar": metar
     })
 
 @app.route("/state", methods=["GET"])
