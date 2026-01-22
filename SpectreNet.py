@@ -1184,6 +1184,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     )
                 else:
                     response_text = template.format(
+                        callsign=callsign,
                         landings=runway,
                         departures=runway,
                     )
