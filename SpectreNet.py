@@ -772,8 +772,8 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         fp_text = fp_text[0].upper() + fp_text[1:]
 
         # Always respond as Tower for flight plans
-        fp_sender = tower.get("sender", f"{airport_code} ATC")
-        return fp_text, fp_sender
+        sender_name = tower.get("sender", f"{airport_code} ATC")
+        return fp_text, sender_name
 
     # =========================================================
     # 5) Normal ATC trigger matching
