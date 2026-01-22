@@ -14,23 +14,43 @@
       "{callsign}, taxi and pushback are handled by {airport} Ground. Contact Ground on {frequency}.",
       "{callsign}, for taxi, contact {airport} Ground on {frequency}.",
       "{callsign}, ground movement is on {airport} Ground. Switch to {frequency}.",
-      "{callsign}, unable to issue taxi on this frequency. Contact {airport} Ground {frequency}."
+      "{callsign}, unable to issue taxi on this frequency. Contact {airport} Ground {frequency}.",
+      "{callsign}, ground handles all surface movement. Contact {airport} Ground on {frequency}.",
+      "{callsign}, taxi requests are on Ground. Switch to {frequency}.",
+      "{callsign}, unable to assist from Tower. Contact Ground on {frequency}.",
+      "{callsign}, this request is handled by Ground. Tune {frequency}.",
+      "{callsign}, for ground operations, contact {airport} Ground {frequency}.",
+      "{callsign}, Tower cannot issue taxi clearance. Ground is on {frequency}."
     ],
     "ground_to_tower": [
       "{callsign}, that request is handled by {airport} Tower. Contact Tower on {frequency}.",
       "{callsign}, for departure or arrival clearance, contact {airport} Tower on {frequency}.",
       "{callsign}, switch to {airport} Tower {frequency} for this request.",
-      "{callsign}, unable to handle this on Ground. Contact {airport} Tower on {frequency}."
+      "{callsign}, unable to handle this on Ground. Contact {airport} Tower on {frequency}.",
+      "{callsign}, departure and arrival clearances are issued by Tower. Contact {frequency}.",
+      "{callsign}, Ground cannot clear that request. Switch to Tower on {frequency}.",
+      "{callsign}, this request requires Tower authorization. Contact {frequency}.",
+      "{callsign}, for takeoff or landing clearance, contact {airport} Tower {frequency}.",
+      "{callsign}, Ground does not handle that request. Tower is on {frequency}.",
+      "{callsign}, please direct this request to Tower on {frequency}."
     ],
     "startup_tower_to_ground": [
       "{callsign}, contact ground for startup clearance on {frequency}.",
       "{callsign}, startup is handled by ground. Switch to {frequency}.",
-      "{callsign}, request acknowledged. Contact ground on {frequency}."
+      "{callsign}, request acknowledged. Contact ground on {frequency}.",
+      "{callsign}, startup clearance is issued by Ground. Contact {frequency}.",
+      "{callsign}, Tower does not handle engine starts. Ground is on {frequency}.",
+      "{callsign}, startup requests go to Ground. Switch to {frequency}.",
+      "{callsign}, request noted. Contact Ground for startup on {frequency}.",
+      "{callsign}, for engine start approval, contact Ground {frequency}."
     ],
     "wrong_airport_frequency": [
       "{CALLSIGN}, wrong frequency for {REQUESTED_AIRPORT}. Tune {FREQUENCY}.",
       "{CALLSIGN}, this is not {REQUESTED_AIRPORT}. Contact them on {FREQUENCY}.",
-      "Negative {CALLSIGN}, you're on the wrong airport frequency. {REQUESTED_AIRPORT} is on {FREQUENCY}."
+      "Negative {CALLSIGN}, you're on the wrong airport frequency. {REQUESTED_AIRPORT} is on {FREQUENCY}.",
+      "{CALLSIGN}, you are not on the {REQUESTED_AIRPORT} frequency. Switch to {FREQUENCY}.",
+      "{CALLSIGN}, incorrect airport frequency. {REQUESTED_AIRPORT} is on {FREQUENCY}.",
+      "{CALLSIGN}, this frequency does not serve {REQUESTED_AIRPORT}. Tune {FREQUENCY}."
     ]
   },
   
@@ -58,11 +78,18 @@
       "landing": [
         "{callsign}, continue holding pattern, you are number {position}.",
         "{callsign}, extend downwind, traffic ahead landing runway {runway}.",
-        "{callsign}, make right traffic, expect clearance shortly."
+        "{callsign}, make right traffic, expect clearance shortly.",
+        "{callsign}, continue present heading, sequencing traffic.",
+        "{callsign}, remain in the pattern, traffic ahead.",
+        "{callsign}, hold as published, landing traffic in progress.",
+        "{callsign}, maintain pattern altitude, expect landing clearance."
       ],
       "takeoff": [
         "{callsign}, hold short runway {runway}, traffic in sequence.",
-        "{callsign}, hold short runway {runway}, you are number {position} for departure."
+        "{callsign}, hold short runway {runway}, you are number {position} for departure.",
+        "{callsign}, hold short runway {runway}, landing traffic.",
+        "{callsign}, remain holding short, departure sequence active.",
+        "{callsign}, hold short runway {runway}, clearance pending."
       ]
     }
 },
@@ -72,18 +99,40 @@
       "{callsign}, say again?",
       "{callsign}, unable to process that request, say again with your intention.",
       "{callsign}, please state your request.",
-      "{callsign}, Tower did not copy your request, say again."
+      "{callsign}, Tower did not copy your request, say again.",
+      "{callsign}, unable to understand your transmission.",
+      "{callsign}, Tower did not receive a clear request.",
+      "{callsign}, unclear request, please restate.",
+      "{callsign}, say again with your request.",
+      "{callsign}, Tower copies unreadable transmission.",
+      "{callsign}, your last transmission was unclear.",
+      "{callsign}, Tower requires clarification.",
+      "{callsign}, unable to comply, request not understood."
     ],
     "ground": [
       "{callsign}, say again for Ground.",
       "{callsign}, Ground is unable to process that request, please clarify.",
       "{callsign}, please restate your taxi or service request.",
-      "{callsign}, Ground did not copy your request, say again."
+      "{callsign}, Ground did not copy your request, say again.",
+      "{callsign}, Ground did not copy that transmission.",
+      "{callsign}, unclear request for Ground.",
+      "{callsign}, Ground requires clarification.",
+      "{callsign}, say again with your ground request.",
+      "{callsign}, unreadable transmission, please repeat.",
+      "{callsign}, Ground unable to determine request.",
+      "{callsign}, please clarify your request for Ground.",
+      "{callsign}, last transmission was unclear."
     ],
     "default": [
       "{callsign}, say again?",
       "{callsign}, unable, please clarify your request.",
-      "{callsign}, unable to determine request. Please clarify."
+      "{callsign}, unable to determine request. Please clarify.",
+      "{callsign}, request not understood.",
+      "{callsign}, unable to process that transmission.",
+      "{callsign}, please repeat your request.",
+      "{callsign}, transmission unclear.",
+      "{callsign}, unable to determine your request.",
+      "{callsign}, say again when ready."
     ]
   },
 
@@ -92,7 +141,19 @@
       "contact {airport} Tower on {frequency} when ready for departure.",
       "switch to {airport} Tower at {frequency} for takeoff clearance.",
       "after taxi, contact {airport} Tower at {frequency} for departure.",
-      "proceed to runway and contact {airport} Tower on {frequency}."
+      "proceed to runway and contact {airport} Tower on {frequency}.",
+      "contact {airport} Tower on {frequency} when holding short.",
+      "when ready for departure, switch to {airport} Tower on {frequency}.",
+      "monitor {airport} Tower on {frequency} for takeoff clearance.",
+      "at the runway, contact {airport} Tower {frequency}.",
+      "switch to {airport} Tower on {frequency} when ready.",
+      "for departure clearance, contact {airport} Tower on {frequency}.",
+      "remain this frequency until holding short, then contact {airport} Tower {frequency}.",
+      "once at the runway, switch to {airport} Tower on {frequency}.",
+      "taxi approved, contact {airport} Tower {frequency} at the runway.",
+      "for further instructions, contact {airport} Tower on {frequency}.",
+      "when established at the runway, contact {airport} Tower {frequency}.",
+      "handoff approved, switch to {airport} Tower on {frequency}."
     ]
   },
 
@@ -113,7 +174,15 @@
       "{CALLSIGN}, {DESTINATION} bound flight plan received.",
       "{CALLSIGN}, flight plan from {ORIGIN} to {DESTINATION} received.",
       "{CALLSIGN}, copy flight plan {ORIGIN} to {DESTINATION}, you are on our board.",
-      "{CALLSIGN}, we have your flight plan from {ORIGIN} to {DESTINATION}."
+      "{CALLSIGN}, we have your flight plan from {ORIGIN} to {DESTINATION}.",
+      "{CALLSIGN}, flight plan acknowledged. Stand by for taxi clearance.",
+      "{CALLSIGN}, flight plan accepted. Advise when ready to taxi.",
+      "{CALLSIGN}, copy filed flight plan. Expect normal departure.",
+      "{CALLSIGN}, flight plan confirmed in the system.",
+      "{CALLSIGN}, your routing to {DESTINATION} has been logged.",
+      "{CALLSIGN}, we show your flight plan to {DESTINATION}.",
+      "{CALLSIGN}, plan from {ORIGIN} to {DESTINATION} is active.",
+      "{CALLSIGN}, flight plan verified. Contact Ground when ready."
     ]
   },
 
@@ -122,32 +191,59 @@
     "responses": [
       "After departure, contact {DESTINATION} Tower on {FREQUENCY}.",
       "On departure, tune {DESTINATION} Tower on {FREQUENCY}.",
-      "When leaving the pattern, contact {DESTINATION} Tower on {FREQUENCY}."
+      "When leaving the pattern, contact {DESTINATION} Tower on {FREQUENCY}.",
+      "Upon departure, switch to {DESTINATION} Tower frequency {FREQUENCY}.",
+      "Once airborne, contact {DESTINATION} Tower on {FREQUENCY}.",
+      "After departure, radar services terminate, contact {DESTINATION} Tower {FREQUENCY}.",
+      "Leaving the pattern, switch to {DESTINATION} Tower on {FREQUENCY}.",
+      "After departure, proceed on course and contact {DESTINATION} Tower {FREQUENCY}.",
+      "Once clear of the departure area, contact {DESTINATION} Tower on {FREQUENCY}.",
+      "Departing the circuit, tune {DESTINATION} Tower on {FREQUENCY}.",
+      "After takeoff, continue VFR and contact {DESTINATION} Tower {FREQUENCY}.",
+      "Upon departure, frequency change approved to {DESTINATION} Tower {FREQUENCY}.",
+      "After departure, monitor {DESTINATION} Tower on {FREQUENCY}.",
+      "When established outbound, contact {DESTINATION} Tower {FREQUENCY}."
     ]
   },
 
   "responses": {
     "landing": [
       "cleared to land runway {landings}", 
-      "approach approved, land runway {landings}"
+      "approach approved, land runway {landings}",
+      "runway {landings}, cleared to land",
+      "landing clearance issued runway {landings}",
+      "runway {landings}, you are cleared for landing"
   ],
     "takeoff": [
       "cleared for takeoff runway {departures}", 
       "you are cleared for departure runway {departures}",
-      "cleared for immediate takeoff runway {departures}"
+      "cleared for immediate takeoff runway {departures}",
+      "runway {departures}, cleared for departure",
+      "departure approved runway {departures}",
+      "cleared for takeoff, runway {departures}",
+      "you are approved for departure runway {departures}"
     ],
     "taxi": [
       "taxi to runway {departures} via taxiway {taxiway}",
       "taxi via {taxiway} to runway {departures}",
       "taxi to runway {departures}. Hold short",
-      "cleared to taxi to runway {departures}"
+      "cleared to taxi to runway {departures}",
+      "taxi approved to runway {departures} via {taxiway}",
+      "proceed via {taxiway} to runway {departures}",
+      "taxi clearance issued to runway {departures}",
+      "approved taxi to runway {departures}",
+      "ground movement approved to runway {departures}"
     ],
     "startup": [
       "startup approved.",
       "engine start approved.",
       "startup approved at your discretion.",
       "cleared for startup. Let us know when ready.",
-      "startup approved. Welcome aboard."
+      "startup clearance granted.",
+      "engine start is approved.",
+      "startup authorized when ready.",
+      "you are cleared to start engines.",
+      "startup approved, advise ready to taxi."
     ]
   },
 
@@ -155,12 +251,18 @@
     "landing": [
       "{callsign}, runway {runway} is now available, cleared to land.",
       "{callsign}, you are now cleared to land runway {runway}.",
-      "{callsign}, continue approach, cleared to land runway {runway}."
+      "{callsign}, continue approach, cleared to land runway {runway}.",
+      "{callsign}, landing traffic clear, runway {runway} cleared to land.",
+      "{callsign}, runway {runway} is open, cleared to land.",
+      "{callsign}, continue final, cleared to land runway {runway}."
     ],
     "takeoff": [
       "{callsign}, runway {runway} is now available, cleared for takeoff.",
       "{callsign}, you are now cleared for takeoff runway {runway}.",
-      "{callsign}, line up and cleared for takeoff runway {runway}."
+      "{callsign}, line up and cleared for takeoff runway {runway}.",
+      "{callsign}, departure traffic clear, runway {runway} cleared for takeoff.",
+      "{callsign}, runway {runway} open, cleared for departure.",
+      "{callsign}, cleared for takeoff runway {runway}, proceed."
     ]
   },
 
