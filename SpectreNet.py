@@ -739,11 +739,13 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     if is_flight_plan_request(request_text):
         # Mark this callsign as having a flight plan at this airport
         ACTIVE_FLIGHT_PLANS[(airport_code, callsign.upper())] = time.time()
+
+        origin, destination = extract_route(original_request_text, airport_code)
+
         FLIGHT_PLAN_ROUTES[(airport_code, callsign.upper())] = {
         "origin": origin,
         "destination": destination,
     }
-        origin, destination = extract_route(original_request_text, airport_code)
 
         usable_templates = []
 
