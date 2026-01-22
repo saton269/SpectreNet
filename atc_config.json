@@ -289,7 +289,7 @@
     "emergency_landing_clearance": [
       "you are cleared to land runway {landings}, runway is clear.",
       "cleared to land runway {landings}, emergency traffic, no delay.",
-      "cleared to land runway {kandings}, emergency crews standing by.",
+      "cleared to land runway {landings}, emergency crews standing by.",
       "runway {landings} is clear, cleared to land."
     ]
   },
