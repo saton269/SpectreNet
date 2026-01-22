@@ -287,10 +287,10 @@
       "{callsign}, cleared for takeoff runway {runway}, proceed."
     ],
     "emergency_landing_clearance": [
-      "{callsign}, you are cleared to land runway {runway}, runway is clear.",
-      "{callsign}, cleared to land runway {runway}, emergency traffic, no delay.",
-      "{callsign}, cleared to land runway {runway}, emergency crews standing by.",
-      "{callsign}, runway {runway} is clear, cleared to land."
+      "{callsign}, you are cleared to land runway {landings}, runway is clear.",
+      "{callsign}, cleared to land runway {landings}, emergency traffic, no delay.",
+      "{callsign}, cleared to land runway {kandings}, emergency crews standing by.",
+      "{callsign}, runway {landings} is clear, cleared to land."
     ]
   },
 
