@@ -52,6 +52,10 @@ INVALID_RUNWAY_MESSAGES = atc_config.get("invalid_runway", {})
 EMERGENCY_TRIGGERS = atc_config.get("emergency_triggers", {})
 POSSIBLE_EMERGENCY_TRIGGERS = EMERGENCY_TRIGGERS.get("possible_emergency_triggers", [])
 
+GROUND_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("taxi", []) + TRIGGER_PHRASES.get("startup", []))
+TOWER_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("takeoff", []) + TRIGGER_PHRASES.get("landing", []))
+STARTUP_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("startup", []))
+
 FLIGHT_PLAN_CONFIG = atc_config.get("flight_plan", {})
 FP_TRIGGERS = [t.lower() for t in FLIGHT_PLAN_CONFIG.get("triggers", [])]
 FP_RESPONSES = FLIGHT_PLAN_CONFIG.get("responses", [])
@@ -398,8 +402,6 @@ def get_weather_for_airport(icao: str) -> dict | None:
     state["zone"] = zone
     return state
 
-from datetime import datetime
-
 def format_metar_from_state(icao: str, state: dict | None) -> str | None:
     """
     Build a pseudo-METAR string from your simulated weather state.
@@ -544,6 +546,8 @@ def get_active_emergency(airport_code: str, callsign: str) -> dict | None:
 def clear_emergency(airport_code: str, callsign: str):
     ACTIVE_EMERGENCIES.pop((airport_code.upper(), callsign.upper()), None)
 
+HOUSEKEEP_MIN_INTERVAL = 15  # seconds
+_NEXT_HOUSEKEEP = 0.0
 
 def cleanup_stale_emergencies(now: float | None = None):
     """
@@ -558,7 +562,6 @@ def cleanup_stale_emergencies(now: float | None = None):
         started = info.get("started_at", now)
         if now - started > EMERGENCY_TTL_SECONDS:
             ACTIVE_EMERGENCIES.pop(key, None)
-
 
 def cleanup_stale_flight_plans(now: float | None = None):
     """
@@ -579,16 +582,31 @@ def cleanup_stale_flight_plans(now: float | None = None):
             ACTIVE_FLIGHT_PLANS.pop(key, None)
             FLIGHT_PLAN_ROUTES.pop(key, None)
 
-def cleanup_expired_frequencies():
+def cleanup_expired_frequencies(now: float | None = None):
+    """Expire inactive frequency buffers to keep memory bounded."""
+    if now is None:
+        now = time.time()
+    if not channels:
+        return
+
+    for freq, data in list(channels.items()):
+        if now - data.get("last_active", now) > FREQUENCY_EXPIRE_SECONDS:
+            channels.pop(freq, None)
+
+def housekeeping(force: bool = False):
+    """
+    Throttled cleanup to keep request handlers light.
+    """
+    global _NEXT_HOUSEKEEP
     now = time.time()
-    expired = []
 
-    for freq, data in channels.items():
-        if now - data["last_active"] > FREQUENCY_EXPIRE_SECONDS:
-            expired.append(freq)
+    if not force and now < _NEXT_HOUSEKEEP:
+        return
+    _NEXT_HOUSEKEEP = now + HOUSEKEEP_MIN_INTERVAL
 
-    for freq in expired:
-        del channels[freq]
+    cleanup_expired_frequencies(now)
+    cleanup_stale_emergencies(now)
+    cleanup_stale_flight_plans(now)
 
 def format_freq(freq):
     if freq < 1000:
@@ -834,18 +852,10 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
     # --- Classify the request intent ---
     # Ground ONLY handles taxi / pushback
-    is_ground_request = any(
-        phrase in request_text
-        for action in ("taxi", "startup")
-        for phrase in TRIGGER_PHRASES.get(action, [])
-    )
+    is_ground_request = any(p in request_text for p in GROUND_TRIGGER_PHRASES)
 
     # Tower-style requests (takeoff / landing, you can add more actions)
-    is_tower_request = any(
-        phrase in request_text
-        for action in ("takeoff", "landing")
-        for phrase in TRIGGER_PHRASES.get(action, [])
-    )
+    is_tower_request = any(p in request_text for p in TOWER_TRIGGER_PHRASES)
 
     # =========================================================
     # 1) Redirects: real ground/tower requests on the *wrong* freq
@@ -858,10 +868,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     ):
 
         # Special-case startup redirect if desired
-        is_startup_request = any(
-            phrase in request_text
-            for phrase in TRIGGER_PHRASES.get("startup", [])
-        )
+        is_startup_request = any(p in request_text for p in STARTUP_TRIGGER_PHRASES)
 
         if is_startup_request:
             templates = REDIRECT_MESSAGES.get("startup_tower_to_ground", [])
@@ -1302,7 +1309,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
 @app.route("/")
 def index():
-    cleanup_expired_frequencies()
+    housekeeping()
     return jsonify({
         "status": "online",
         "instance_id": SERVER_INSTANCE_ID,
@@ -1343,7 +1350,7 @@ def atc_lookup():
 
 @app.route("/state", methods=["GET"])
 def get_state():
-    cleanup_expired_frequencies()
+    housekeeping()
 
     freq = int(request.args.get("frequency", 16))
 
@@ -1362,11 +1369,9 @@ def get_state():
 
 @app.route("/send", methods=["POST"])
 def send_message():
-    cleanup_expired_frequencies()
+    housekeeping()
     process_runway_sequencing()
     update_all_weather()
-    cleanup_stale_emergencies()
-    cleanup_stale_flight_plans()
 
     data = request.get_json(force=True)
 
@@ -1416,7 +1421,7 @@ def send_message():
 
 @app.route("/fetch", methods=["GET"])
 def fetch_messages():
-    cleanup_expired_frequencies()
+    housekeeping()
     process_runway_sequencing()
 
     freq = int(request.args.get("frequency", 16))
