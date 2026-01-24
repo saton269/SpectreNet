@@ -1151,7 +1151,11 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     runway_key = logical_runway_id or runway or "DEFAULT"
                     state = get_runway_state(airport_code, runway_key)
 
-                    occupy = OCCUPANCY.get(action, 30)
+                    if has_emergency and action == "landing":
+                        occupy = OCCUPANCY.get("emergency_landing", OCCUPANCY.get(action, 60))
+                    else:
+                        occupy = OCCUPANCY.get(action, 30)
+
                     entry = {
                         "airport": airport_code,
                         "runway": runway,    # end used in messages
@@ -1162,24 +1166,47 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         "emergency": has_emergency,
                     }
 
-                    if runway_active(state) and not has_emergency:
+                    # Check if there's already an active aircraft and whether it's an emergency
+                    active = state.get("active") or state.get("current")  # depends on your structure
+                    active_is_emergency = bool(active and active.get("emergency"))
+
+                    if runway_active(state):
+
+                        if active_is_emergency and not has_emergency:
+                            # --- NEW: hold normal traffic due to active emergency ---
+                            hold_templates = HOLD_MESSAGES.get("emergency_hold_traffic", []) or HOLD_MESSAGES.get(action, [])
+
+                            if hold_templates:
+                                hold_template = random.choice(hold_templates)
+                                # You can include emergency runway / callsign in the message later
+                                hold_text = hold_template.format(
+                                    callsign=callsign,
+                                    runway=runway,
+                                )
+                            else:
+                                hold_text = f"{callsign}, hold, runway blocked due to emergency traffic."
+
+                            hold_text = hold_text[0].upper() + hold_text[1:]
+                            return hold_text, sender_name
+                        
+                        if not has_emergency:
                         # Normal traffic: hold and queue behind existing aircraft
-                        state["queue"].append(entry)
+                            state["queue"].append(entry)
 
-                        position = len(state["queue"]) + 1
-                        hold_templates = HOLD_MESSAGES.get(action, [])
-                        if hold_templates:
-                            hold_template = random.choice(hold_templates)
-                            hold_text = hold_template.format(
-                                callsign=callsign,
-                                runway=runway,
-                                position=position,
-                            )
-                        else:
-                            hold_text = f"{callsign}, hold, traffic in sequence."
+                            position = len(state["queue"]) + 1
+                            hold_templates = HOLD_MESSAGES.get(action, [])
+                            if hold_templates:
+                                hold_template = random.choice(hold_templates)
+                                hold_text = hold_template.format(
+                                    callsign=callsign,
+                                    runway=runway,
+                                    position=position,
+                                )
+                            else:
+                                hold_text = f"{callsign}, hold, traffic in sequence."
 
-                        hold_text = hold_text[0].upper() + hold_text[1:]
-                        return hold_text, sender_name
+                            hold_text = hold_text[0].upper() + hold_text[1:]
+                            return hold_text, sender_name
 
                     # Either runway is free OR this is an emergency:
                     # mark it active for this aircraft (emergency overrides whoever was there).

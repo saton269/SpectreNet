@@ -71,6 +71,7 @@
 
     "occupancy_seconds": {
       "landing": 60,
+      "emergency_landing": 180,
       "takeoff": 30
     },
 
