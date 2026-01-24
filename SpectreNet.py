@@ -6,9 +6,19 @@ import re
 import uuid
 from collections import deque
 from datetime import datetime
+import logging
 
 
 app = Flask(__name__)
+
+# Make sure Python's root logging is at least INFO
+logging.basicConfig(level=logging.INFO)
+
+# Make sure Flask's logger is also INFO
+app.logger.setLevel(logging.INFO)
+
+app.logger.info("🔥 ATC server starting up, custom logging should be visible")
+print("🔥 ATC server print() starting up")  # this *definitely* goes to Render logs
 
 # Load airports and triggers from JSON
 with open("airports.json", "r") as f:
