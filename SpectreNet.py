@@ -55,6 +55,7 @@ POSSIBLE_EMERGENCY_TRIGGERS = EMERGENCY_TRIGGERS.get("possible_emergency_trigger
 GROUND_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("taxi", []) + TRIGGER_PHRASES.get("startup", []))
 TOWER_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("takeoff", []) + TRIGGER_PHRASES.get("landing", []))
 STARTUP_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("startup", []))
+EMERGENCY_TRIGGER_PHRASES = tuple(EMERGENCY_TRIGGERS.get("mayday", []) + EMERGENCY_TRIGGERS.get("pan", []) + EMERGENCY_TRIGGERS.get("generic", []))
 
 FLIGHT_PLAN_CONFIG = atc_config.get("flight_plan", {})
 FP_TRIGGERS = [t.lower() for t in FLIGHT_PLAN_CONFIG.get("triggers", [])]
@@ -835,9 +836,23 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
     original_request_text = request_text
     request_text = request_text.lower()
 
-    # --- Emergency detection based on the original (case-preserved) text ---
+    # --- Emergency detection ---
+    # 1) Type from JSON-defined triggers (mayday / pan / generic)
     emergency_type = detect_emergency_type(original_request_text)
     has_emergency = emergency_type != EMERGENCY_TYPE_NONE
+
+    # 2) Extra safety pass using flattened trigger list
+    if not has_emergency and EMERGENCY_TRIGGER_PHRASES:
+        if any(p.lower() in request_text for p in EMERGENCY_TRIGGER_PHRASES):
+            has_emergency = True
+            if emergency_type == EMERGENCY_TYPE_NONE:
+                emergency_type = EMERGENCY_TYPE_GENERIC
+
+    # 3) Optional "sounds like" fuzziness
+    if not has_emergency and sounds_like_possible_emergency(original_request_text):
+        has_emergency = True
+        if emergency_type == EMERGENCY_TYPE_NONE:
+            emergency_type = EMERGENCY_TYPE_GENERIC
 
     requested_runway = parse_requested_runway(request_text)  # e.g. "27L"
     pilot_key = (airport_code, callsign)
@@ -1301,10 +1316,32 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
                 # Use per-role sender_name (Tower / Ground)
                 return capitalized, sender_name
+            
+    # =========================================================
+    # 5b) Emergency fallback: emergency but no action matched
+    # =========================================================
+    if has_emergency:
+        if emergency_type == EMERGENCY_TYPE_MAYDAY:
+            ack_pool = ATC_RESPONSES.get("emergency_ack_mayday", [])
+        elif emergency_type == EMERGENCY_TYPE_PAN:
+            ack_pool = ATC_RESPONSES.get("emergency_ack_pan", [])
+        else:
+            ack_pool = ATC_RESPONSES.get("emergency_ack_generic", [])
 
+        if ack_pool:
+            ack_template = random.choice(ack_pool)
+            ack_text = ack_template.format(
+                CALLSIGN=callsign,
+                AIRPORT=airport_code,
+            )
+        else:
+            ack_text = f"{callsign}, roger, emergency acknowledged."
+
+        ack_text = ack_text[0].upper() + ack_text[1:]
+        return ack_text, sender_name
 
     # =========================================================
-    # 5) Fallback: unknown / unrecognized request on a valid freq
+    # 5c) Fallback: unknown / unrecognized request on a valid freq
     # =========================================================
     templates = UNKNOWN_MESSAGES.get(role) or UNKNOWN_MESSAGES.get("default", [])
     if templates:
