@@ -1017,12 +1017,25 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         for phrase in phrases:
             if phrase in request_text:
 
-                # --- Pick base response template (emergencies use special landing phrasing) ---
-                if has_emergency and action == "landing":
-                    # Use emergency landing templates from auto_clear if present; fall back to normal landing
-                    templates_pool = AUTO_CLEAR_RESPONSES.get("emergency_landing_clearance") or ATC_RESPONSES[action]
+                effective_action = action
+
+                # If an emergency was declared but we matched some generic/emergency action
+                # (e.g. action == "emergency"), treat it as a landing by default.
+                if has_emergency and effective_action not in ("landing", "takeoff", "taxi"):
+                    effective_action = "landing"
+
+                if has_emergency and effective_action == "landing":
+                # Use emergency landing templates from auto_clear if present; fall back to normal landing
+                    templates_pool = (
+                        AUTO_CLEAR_RESPONSES.get("emergency_landing_clearance")
+                        or ATC_RESPONSES.get("landing", [])
+                    )
                 else:
-                    templates_pool = ATC_RESPONSES[action]
+                    templates_pool = ATC_RESPONSES.get(effective_action, [])
+
+                if not templates_pool:
+                    # No templates for this action; move on to next match
+                    continue
 
                 template = random.choice(templates_pool)
 
