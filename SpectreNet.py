@@ -31,9 +31,12 @@ for channel_id, cfg in CHANNELS_CONFIG.items():
     if tx_policy.get("mode") == "whitelist_uuid":
         tx_policy["allowed_uuids_set"] = set(tx_policy.get("allowed_uuids", []))
 
+    sender = cfg.get("sender") or cfg.get("name") or channel_id
+
     CHANNELS_BY_FREQ[freq] = {
         "id": channel_id,
         **cfg,
+        "sender": sender,
         "tx_policy": tx_policy,
     }
 
@@ -1461,6 +1464,14 @@ def send_message():
     sender = data.get("sender", "UNKNOWN")
     sender_uuid = data.get("sender_uuid")
 
+    app.logger.info(
+        "[RX /send] freq=%r sender=%r text=%r full_json=%s",
+        freq,
+        sender,
+        text,
+        json.dumps(data, ensure_ascii=False)
+    )
+
     if not text:
         return jsonify({"error": "empty message"}), 400
     
@@ -1507,6 +1518,13 @@ def fetch_messages():
 
     freq = int(request.args.get("frequency", 16))
     since_id = int(request.args.get("since_id", 0))
+
+    app.logger.info(
+        "[RX /fetch] freq=%r since=%r query=%r",
+        freq,
+        since_id,
+        dict(request.args)
+    )
 
     if freq not in channels:
         return jsonify({
