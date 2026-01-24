@@ -1208,6 +1208,9 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
                             hold_text = hold_text[0].upper() + hold_text[1:]
                             return hold_text, sender_name
+                        
+                        if active and not active_is_emergency:
+                            state["queue"].append(active)
 
                     # Either runway is free OR this is an emergency:
                     # mark it active for this aircraft (emergency overrides whoever was there).
