@@ -1172,9 +1172,22 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
                     if runway_active(state):
 
-                        if active_is_emergency and not has_emergency:
-                            # --- NEW: hold normal traffic due to active emergency ---
-                            hold_templates = HOLD_MESSAGES.get("emergency_hold_traffic", []) or HOLD_MESSAGES.get(action, [])
+                        if not has_emergency:
+                            # ---- NORMAL TRAFFIC WHILE RUNWAY IS BUSY ----
+                            # Always queue normal traffic so process_runway_sequencing()
+                            # can auto-clear it later.
+                            state["queue"].append(entry)
+
+                            position = len(state["queue"]) + 1
+
+                            # If the *current* active aircraft is an emergency, prefer the
+                            # spial emergency-hold messages, otherwise normal hold text.
+                            if active_is_emergency:
+                                # --- NEW: hold normal traffic due to active emergency ---
+                                hold_templates = HOLD_MESSAGES.get("emergency_hold_traffic", []) or HOLD_MESSAGES.get(action, [])
+                            
+                            else:
+                                hold_templates = HOLD_MESSAGES.get(action, [])
 
                             if hold_templates:
                                 hold_template = random.choice(hold_templates)
@@ -1182,28 +1195,16 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                                 hold_text = hold_template.format(
                                     callsign=callsign,
                                     runway=runway,
-                                )
-                            else:
-                                hold_text = f"{callsign}, hold, runway blocked due to emergency traffic."
-
-                            hold_text = hold_text[0].upper() + hold_text[1:]
-                            return hold_text, sender_name
-                        
-                        if not has_emergency:
-                        # Normal traffic: hold and queue behind existing aircraft
-                            state["queue"].append(entry)
-
-                            position = len(state["queue"]) + 1
-                            hold_templates = HOLD_MESSAGES.get(action, [])
-                            if hold_templates:
-                                hold_template = random.choice(hold_templates)
-                                hold_text = hold_template.format(
-                                    callsign=callsign,
-                                    runway=runway,
                                     position=position,
                                 )
                             else:
-                                hold_text = f"{callsign}, hold, traffic in sequence."
+                                if active_is_emergency:
+                                    hold_text = (
+                                        f"{callsign}, hold, runway blocked due to "
+                                        f"emergency traffic."
+                                    )
+                                else:
+                                    hold_text = f"{callsign}, hold, traffic in sequence."
 
                             hold_text = hold_text[0].upper() + hold_text[1:]
                             return hold_text, sender_name

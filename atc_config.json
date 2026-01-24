@@ -327,7 +327,7 @@
   },
 
   "trigger_phrases": {
-    "landing": ["request landing", "landing", "request to land", "clearance to land", "inbound for landing", "on final"],
+    "landing": ["request landing", "landing", "request to land", "clearance to land", "inbound for landing", "on final", "land"],
     "takeoff": ["request takeoff","request departure", "take off", "takeoff", "depart", "departure","holding short ready for departure","ready at runway"],
     "taxi": ["request taxi","request taxi to runway", "taxi", "taxiing", "ready to taxi","taxi for departure"],
     "startup": ["request startup", "request engine start", "request start", "ready for startup", "ready to start", "request startup clearance", "request engine start at gate", "startup", "start up"]
