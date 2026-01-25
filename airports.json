@@ -472,6 +472,257 @@
         "takeoff_ends": ["27"]
       }
       ]
+    },
+    "SLWO": {
+      "name": "Angels W1",
+      "sender": "SLWO ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 121225, 
+      "ground_frequency": 121800, 
+      "landings": ["27L","27C","27R"],
+      "departures": ["09R","09C","09L"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["27L"],
+        "takeoff_ends": ["09R"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["27R"],
+        "takeoff_ends": ["09L"]
+      },
+      {
+        "id": "RWY_C",
+        "physical_id": "RWY_C",
+        "landing_ends": ["27C"],
+        "takeoff_ends": ["09C"]
+      }
+      ]
+    },
+    "SLCS": {
+      "name": "Cheerport",
+      "sender": "SLCS ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 120275, 
+      "ground_frequency": 121625, 
+      "landings": ["27R"],
+      "departures": ["09R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": [],
+        "takeoff_ends": ["09R"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["27R"],
+        "takeoff_ends": []
+      }
+      ]
+    },
+    "SLBM": {
+      "name": "Angels B1",
+      "sender": "SLBM ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 127725, 
+      "ground_frequency": 127725, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLAN": {
+      "name": "Angels N1",
+      "sender": "SLAN ATC",
+      "weather_zone": "ISLAND_MARITIME",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 121700, 
+      "landings": ["36L","36A","36C","27"],
+      "departures": ["18R","18A","18L","09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["36L"],
+        "takeoff_ends": ["18R"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["36C"],
+        "takeoff_ends": ["18L"]
+      },
+      {
+        "id": "RWY_C",
+        "physical_id": "RWY_C",
+        "landing_ends": ["36A"],
+        "takeoff_ends": ["18A"]
+      },
+      {
+        "id": "RWY_A",
+        "physical_id": "RWY_A",
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLSY": {
+      "name": "Shell Yeah Field",
+      "sender": "SLSY ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 126150, 
+      "ground_frequency": 126150, 
+      "landings": ["29","34"],
+      "departures": ["11","16"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["29"],
+        "takeoff_ends": ["11"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["34"],
+        "takeoff_ends": ["16"]
+      }
+      ]
+    },
+    "SLBL": {
+      "name": "Buffalo Springs",
+      "sender": "SLBL ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 121300, 
+      "ground_frequency": 121300, 
+      "landings": ["27","09"],
+      "departures": ["09","27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27","09"],
+        "takeoff_ends": ["09","27"]
+      }
+      ]
+    },
+    "SLBG": {
+      "name": "Bergheim Airstrip",
+      "sender": "SLBG ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 120175, 
+      "ground_frequency": 120175, 
+      "landings": ["27","09"],
+      "departures": ["09","27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27","09"],
+        "takeoff_ends": ["09","27"]
+      }
+      ]
+    },
+    "SLSP": {
+      "name": "Shark Pool Airstrip",
+      "sender": "SLSP ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 126675, 
+      "ground_frequency": 126675, 
+      "landings": ["27","09"],
+      "departures": ["09","27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27","09"],
+        "takeoff_ends": ["09","27"]
+      }
+      ]
+    },
+    "SLBF": {
+      "name": "Bellisseria Fairgrounds Airstrip",
+      "sender": "SLBF ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 126700, 
+      "ground_frequency": 126700, 
+      "landings": ["31","13"],
+      "departures": ["13","31"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["31","13"],
+        "takeoff_ends": ["13","31"]
+      }
+      ]
+    },
+    "SLCR": {
+      "name": "Coral Airfield",
+      "sender": "SLCR ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 129825, 
+      "ground_frequency": 129825, 
+      "landings": ["34","16"],
+      "departures": ["16","34"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["34","16"],
+        "takeoff_ends": ["16","34"]
+      }
+      ]
+    },
+    "SLGB": {
+      "name": "SS Galaxy",
+      "sender": "SLGB ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 127400, 
+      "ground_frequency": 127400, 
+      "landings": ["H1"],
+      "departures": ["H2"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["H1"],
+        "takeoff_ends": ["H2"]
+      }
+      ]
     }
   }
 }

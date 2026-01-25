@@ -81,6 +81,15 @@
         "qnh_mean": 1017,
         "qnh_variation": 7,
         "favored_conditions": ["BKN", "OVC", "RAIN", "FEW"]
+    },
+    "BELLESARIA_MIXED": {
+        "base_temp": 18,
+        "temp_variation": 4,
+        "wind_min": 2,
+        "wind_max": 18,
+        "qnh_mean": 1015,
+        "qnh_variation": 5,
+        "favored_conditions": ["CLEAR", "FEW", "BKN", "OVC", "MIST"]
     }
   },
 
