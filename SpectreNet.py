@@ -185,7 +185,7 @@ def choose_helicopter_response(airport_code: str, action: str, callsign: str) ->
     resp_cfg = ATC_RESPONSES.get("responses", {})
 
     key = f"helicopter_{action}"
-    candidates = resp_cfg.get(key, [])
+    candidates = ATC_RESPONSES.get(key, [])
 
     if candidates:
         template = random.choice(candidates)
@@ -195,8 +195,8 @@ def choose_helicopter_response(airport_code: str, action: str, callsign: str) ->
         )
 
     # Fallback: generic non-runway phrasing
-    generic_key = f"{action}_generic"
-    fallback = resp_cfg.get(generic_key, [])
+    generic_key = f"{action}"
+    fallback = ATC_RESPONSES.get(generic_key, [])
 
     if fallback:
         template = random.choice(fallback)
