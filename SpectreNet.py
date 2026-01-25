@@ -93,6 +93,10 @@ RUNWAY_STATE = {}
 RUNWAY_END_TO_PHYSICAL: dict[str, dict[str, str]] = {}   # ICAO -> { "27L": "RWY_L", ... }
 VALID_ENDS_BY_ACTION: dict[str, dict[str, set[str]]] = {}
 
+HELIPADS_BY_AIRPORT: dict[str, dict[str, dict]] = {}     # ICAO -> { "H1": {...}, "HOSP": {...} }
+HELIPAD_OCCUPANCY: dict[str, dict[str, int]] = {}        # ICAO -> { "H1": 0, "HOSP": 0, ... }
+
+
 # Airport+callsign -> timestamp (or just flag) for active flight plans
 ACTIVE_FLIGHT_PLANS: dict[tuple[str, str], float] = {}
 # (airport_code, CALLSIGN) -> {"origin": ..., "destination": ...}
@@ -180,19 +184,23 @@ def is_helicopter_request(request_text: str, callsign: str) -> bool:
 
     return False
 
-def choose_helicopter_response(airport_code: str, action: str, callsign: str) -> str:
+def choose_helicopter_response(airport_code: str, action: str, callsign: str, helipad: str | None = None) -> str:
     airport_cfg = ATC_TOWERS.get(airport_code, {})
     resp_cfg = ATC_RESPONSES.get("responses", {})
 
     key = f"helicopter_{action}"
     candidates = ATC_RESPONSES.get(key, [])
 
-    if candidates:
-        template = random.choice(candidates)
+    def _format(template: str) -> str:
         return template.format(
             CALLSIGN=callsign,
-            AIRPORT=airport_code
+            AIRPORT=airport_code,
+            HELIPAD=helipad or "",
         )
+
+    if candidates:
+        template = random.choice(candidates)
+        return _format(template)
 
     # Fallback: generic non-runway phrasing
     generic_key = f"{action}"
@@ -200,10 +208,7 @@ def choose_helicopter_response(airport_code: str, action: str, callsign: str) ->
 
     if fallback:
         template = random.choice(fallback)
-        return template.format(
-            CALLSIGN=callsign,
-            AIRPORT=airport_code
-        )
+        return _format(template)
 
     # Absolute fallback (never mentions runway)
     if action == "takeoff":
@@ -291,7 +296,36 @@ def build_runway_indexes():
         RUNWAY_END_TO_PHYSICAL[icao_u] = end_map
         VALID_ENDS_BY_ACTION[icao_u] = {}  # filled lazily by runway_ends_for_action
 
+def build_helipad_indexes():
+    """
+    Build ICAO -> helipad config + occupancy maps from airport data.
+    """
+    HELIPADS_BY_AIRPORT.clear()
+    HELIPAD_OCCUPANCY.clear()
+
+    for icao, tower in ATC_TOWERS.items():
+        icao_u = icao.upper()
+        pads = tower.get("helipads", [])
+        if not pads:
+            continue
+
+        pad_map: dict[str, dict] = {}
+        occ_map: dict[str, int] = {}
+
+        for pad in pads:
+            pid = (pad.get("id") or "").upper().strip()
+            if not pid:
+                continue
+
+            pad_map[pid] = pad
+            occ_map[pid] = 0  # start empty
+
+        if pad_map:
+            HELIPADS_BY_AIRPORT[icao_u] = pad_map
+            HELIPAD_OCCUPANCY[icao_u] = occ_map
+
 build_runway_indexes()
+build_helipad_indexes()
 
 def parse_requested_runway(request_text: str) -> str | None:
     m = RUNWAY_RE.search(request_text or "")
@@ -302,6 +336,22 @@ def parse_requested_runway(request_text: str) -> str | None:
         return None
     side = (m.group(2) or "").upper()
     return f"{num:02d}{side}"
+
+def find_requested_helipad(airport_code: str, request_text: str) -> str | None:
+    """
+    Look for a helipad id (e.g. 'H1', 'HOSP') in the request text
+    that matches any configured helipad for this airport.
+    """
+    pads = HELIPADS_BY_AIRPORT.get(airport_code, {})
+    if not pads or not request_text:
+        return None
+
+    t = request_text.upper()
+    for pid in pads.keys():
+        if pid in t:
+            return pid
+
+    return None
 
 def runway_ends_for_action(tower: dict, action: str) -> set[str]:
     """
@@ -1131,6 +1181,39 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 # --------------------------------------------------
                 logical_runway_id = None
                 runway = ""
+                helipad_id = None
+
+                # Helicopter → prefer helipads if defined for this airport
+                if is_helicopter and action in ("landing", "takeoff"):
+                    pad_map = HELIPADS_BY_AIRPORT.get(airport_code, {})
+                    occ_map = HELIPAD_OCCUPANCY.get(airport_code, {})
+
+                    if pad_map:
+                        # Did they request a specific helipad?
+                        requested_helipad = find_requested_helipad(airport_code, original_request_text)
+                        if requested_helipad and requested_helipad in pad_map:
+                            helipad_id = requested_helipad
+                        else:
+                            # Auto-assign first pad with free slot
+                            for pid, pad_cfg in pad_map.items():
+                                max_sim = int(pad_cfg.get("max_simultaneous", 1))
+                                current = int(occ_map.get(pid, 0))
+                                if current < max_sim:
+                                    helipad_id = pid
+                                    break
+
+                        if not helipad_id:
+                            # All pads full
+                            hold_text = f"{callsign}, all helipads are currently occupied, standby."
+                            hold_text = hold_text[0].upper() + hold_text[1:]
+                            return hold_text, sender_name
+
+                        # For helicopters using helipads, we do NOT pick a runway
+                        logical_runway_id = None
+                        runway = ""  # no runway used
+                    else:
+                        # No helipads defined; fall back to normal runway logic below
+                        pass
 
                 if action in ("landing", "takeoff"):
                     if action == "takeoff":
@@ -1331,11 +1414,10 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 # --- Helicopter-specific phrasing (JSON-driven) ---
                 # For helicopters requesting takeoff/landing, switch to helicopter_* responses.
                 if is_helicopter and effective_action in ("takeoff", "landing"):
-                    heli_text = choose_helicopter_response(airport_code, effective_action, callsign)
+                    heli_text = choose_helicopter_response(airport_code, effective_action, callsign, helipad=helipad_id)
                     if heli_text:
                         response_text = heli_text
                         helicopter_full_text = True
-
 
                 # --- Ground → Tower handoff (only when actually on Ground) ---
                 if role == "ground" and action == "taxi":
@@ -1423,6 +1505,17 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
                     # Stick ack in front, broadcast at the end
                     response_text = f"{ack_text} {response_text}{hold_broadcast}".strip()
+                    
+
+                # --- Helipad occupancy bookkeeping ---
+                if is_helicopter and helipad_id and action == "landing":
+                    occ_map = HELIPAD_OCCUPANCY.get(airport_code, {})
+                    occ_map[helipad_id] = occ_map.get(helipad_id, 0) + 1
+
+                if is_helicopter and helipad_id and action == "takeoff":
+                    occ_map = HELIPAD_OCCUPANCY.get(airport_code, {})
+                    occ_map[helipad_id] = max(0, occ_map.get(helipad_id, 0) - 1)
+
 
                 if helicopter_full_text:
                     # Helicopter templates already include the callsign

@@ -48,6 +48,18 @@
         "landing_ends": [],
         "takeoff_ends": ["27R"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Sletta",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "SNO Term A",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLJA": {
