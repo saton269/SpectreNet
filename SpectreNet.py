@@ -182,7 +182,7 @@ def is_helicopter_request(request_text: str, callsign: str) -> bool:
 
 def choose_helicopter_response(airport_code: str, action: str, callsign: str) -> str:
     airport_cfg = ATC_TOWERS.get(airport_code, {})
-    resp_cfg = airport_cfg.get("responses", {})
+    resp_cfg = ATC_RESPONSES.get("responses", {})
 
     key = f"helicopter_{action}"
     candidates = resp_cfg.get(key, [])
