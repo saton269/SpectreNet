@@ -159,6 +159,61 @@ def can_transmit_on_frequency(freq, sender_uuid):
     # Future: other modes, but default to no if unknown
     return False
 
+# -------------------------------------------------------------------
+# Helicopter detection (JSON-driven)
+# -------------------------------------------------------------------
+
+def is_helicopter_request(request_text: str, callsign: str) -> bool:
+    text = (request_text or "").lower()
+    cs = (callsign or "").lower()
+
+    heli_cfg = TRIGGER_PHRASES.get("helicopter", {})
+
+    if isinstance(heli_cfg, list):
+        for kw in heli_cfg:
+            if isinstance(kw, str) and kw.lower() in text:
+                return True
+
+    # Optional callsign-based detection
+    if cs.startswith(("heli", "helo", "h-")):
+        return True
+
+    return False
+
+def choose_helicopter_response(airport_code: str, action: str, callsign: str) -> str:
+    airport_cfg = ATC_TOWERS.get(airport_code, {})
+    resp_cfg = airport_cfg.get("responses", {})
+
+    key = f"helicopter_{action}"
+    candidates = resp_cfg.get(key, [])
+
+    if candidates:
+        template = random.choice(candidates)
+        return template.format(
+            CALLSIGN=callsign,
+            AIRPORT=airport_code
+        )
+
+    # Fallback: generic non-runway phrasing
+    generic_key = f"{action}_generic"
+    fallback = resp_cfg.get(generic_key, [])
+
+    if fallback:
+        template = random.choice(fallback)
+        return template.format(
+            CALLSIGN=callsign,
+            AIRPORT=airport_code
+        )
+
+    # Absolute fallback (never mentions runway)
+    if action == "takeoff":
+        return f"{callsign}, cleared for departure."
+    if action == "landing":
+        return f"{callsign}, cleared to land."
+
+    return None
+
+
 #------------------------------------
 # EMERGENCY HELPERS
 #------------------------------------
@@ -867,6 +922,8 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         if emergency_type == EMERGENCY_TYPE_NONE:
             emergency_type = EMERGENCY_TYPE_GENERIC
 
+    is_helicopter = is_helicopter_request(original_request_text, callsign)
+
     requested_runway = parse_requested_runway(request_text)  # e.g. "27L"
     pilot_key = (airport_code, callsign)
 
@@ -1045,6 +1102,8 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
         for phrase in phrases:
             if phrase in request_text:
 
+                helicopter_full_text = False
+
                 effective_action = action
 
                 # If an emergency was declared but we matched some generic/emergency action
@@ -1158,6 +1217,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     SEQUENCING.get("enabled", True)
                     and role == "tower"
                     and action in ("landing", "takeoff")
+                    and not is_helicopter
                 ):
                     # Group by physical runway when using new config;
                     # fall back to using the runway end string otherwise.
@@ -1237,7 +1297,7 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                 # --------------------------------------------------
                 # Invalid runway request handling (JSON-driven)
                 # --------------------------------------------------
-                if action in ("landing", "takeoff") and requested_runway:
+                if action in ("landing", "takeoff") and requested_runway and not is_helicopter:
                     requested_norm = requested_runway.upper()
                     valid_for_action = runway_ends_for_action(tower, action)
 
@@ -1267,6 +1327,15 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                         landings=runway,
                         departures=runway,
                     )
+
+                # --- Helicopter-specific phrasing (JSON-driven) ---
+                # For helicopters requesting takeoff/landing, switch to helicopter_* responses.
+                if is_helicopter and effective_action in ("takeoff", "landing"):
+                    heli_text = choose_helicopter_response(airport_code, effective_action, callsign)
+                    if heli_text:
+                        response_text = heli_text
+                        helicopter_full_text = True
+
 
                 # --- Ground → Tower handoff (only when actually on Ground) ---
                 if role == "ground" and action == "taxi":
@@ -1355,8 +1424,13 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     # Stick ack in front, broadcast at the end
                     response_text = f"{ack_text} {response_text}{hold_broadcast}".strip()
 
-                response = f"{callsign}, {response_text}"
-                capitalized = response[0].upper() + response[1:]
+                if helicopter_full_text:
+                    # Helicopter templates already include the callsign
+                    full_text = response_text
+                else:
+                    full_text = f"{callsign}, {response_text}"
+
+                capitalized = full_text[0].upper() + full_text[1:]
 
                 # Use per-role sender_name (Tower / Ground)
                 return capitalized, sender_name

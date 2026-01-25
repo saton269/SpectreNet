@@ -221,7 +221,7 @@
       "runway {landings}, cleared to land",
       "landing clearance issued runway {landings}",
       "runway {landings}, you are cleared for landing"
-  ],
+    ],
     "takeoff": [
       "cleared for takeoff runway {departures}", 
       "you are cleared for departure runway {departures}",
@@ -267,6 +267,17 @@
       "roger, emergency acknowledged.",
       "copy your emergency, you have priority.",
       "roger, we will get you straight in."
+    ],
+    "helicopter_takeoff": [
+      "{CALLSIGN}, cleared for vertical departure.",
+      "{CALLSIGN}, cleared for departure from the helipad, remain clear of the active runway.",
+      "{CALLSIGN}, takeoff approved, caution ground traffic."
+    ],
+
+    "helicopter_landing": [
+      "{CALLSIGN}, cleared to land at the helipad.",
+      "{CALLSIGN}, cleared to land near the terminal, avoid overflight of the runway.",
+      "{CALLSIGN}, landing approved, caution personnel in the area."
     ]
   },
 
@@ -330,6 +341,7 @@
     "landing": ["request landing", "landing", "request to land", "clearance to land", "inbound for landing", "on final", "land"],
     "takeoff": ["request takeoff","request departure", "take off", "takeoff", "depart", "departure","holding short ready for departure","ready at runway"],
     "taxi": ["request taxi","request taxi to runway", "taxi", "taxiing", "ready to taxi","taxi for departure"],
-    "startup": ["request startup", "request engine start", "request start", "ready for startup", "ready to start", "request startup clearance", "request engine start at gate", "startup", "start up"]
+    "startup": ["request startup", "request engine start", "request start", "ready for startup", "ready to start", "request startup clearance", "request engine start at gate", "startup", "start up"],
+    "helicopter": ["helicopter", "helo", "heli"]
   }
 }

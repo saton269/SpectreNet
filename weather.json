@@ -89,7 +89,16 @@
         "wind_max": 18,
         "qnh_mean": 1015,
         "qnh_variation": 5,
-        "favored_conditions": ["CLEAR", "FEW", "BKN", "OVC", "MIST"]
+        "favored_conditions": ["CLEAR", "FEW", "BKN", "OVC", "MIST","HAZE"]
+    },
+    "CORSICA_COLD_CONTINENTAL": {
+        "base_temp": 2,
+        "temp_variation": 7,
+        "wind_min": 4,
+        "wind_max": 26,
+        "qnh_mean": 1012,
+        "qnh_variation": 7,
+        "favored_conditions": ["CLEAR","FEW","BKN","OVC","SNOW","MIST","FOG"]
     }
   },
 
