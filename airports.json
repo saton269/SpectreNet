@@ -396,6 +396,82 @@
         "takeoff_ends": ["18"]
       }
       ]
+    },
+    "SLMG": {
+      "name": "Smugglers Outpost Airstrip",
+      "sender": "SLMG ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 122800, 
+      "ground_frequency": 121650, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLNL": {
+      "name": "Nautilus Helicopter Logistics",
+      "sender": "SLNL ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 126525, 
+      "ground_frequency": 121675, 
+      "landings": [],
+      "departures": [],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": [],
+        "takeoff_ends": []
+      }
+      ]
+    },
+    "SLCW": {
+      "name": "St. Petersburg-Clearwater Airport",
+      "sender": "SLCW ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 128825, 
+      "ground_frequency": 121700, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ]
+    },
+    "SLDF": {
+      "name": "Diamond Air Field",
+      "sender": "SLDF ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 119200,
+      "tower_frequency": 127850, 
+      "ground_frequency": 121700, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
     }
   }
 }
