@@ -844,7 +844,6 @@ def housekeeping(force: bool = False):
     cleanup_expired_frequencies(now)
     cleanup_stale_emergencies(now)
     cleanup_stale_flight_plans(now)
-    cleanup_helipads(now)
 
 def format_freq(freq):
     if freq < 1000:
@@ -1773,6 +1772,7 @@ def get_state():
 def send_message():
     housekeeping()
     process_runway_sequencing()
+    cleanup_helipads()
     update_all_weather()
 
     data = request.get_json(force=True)
@@ -1833,6 +1833,7 @@ def send_message():
 def fetch_messages():
     housekeeping()
     process_runway_sequencing()
+    cleanup_helipads()
 
     freq = int(request.args.get("frequency", 16))
     since_id = int(request.args.get("since_id", 0))
