@@ -6,6 +6,7 @@ import re
 import uuid
 from collections import deque
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import logging
 
 
@@ -127,6 +128,13 @@ DEST_ONLY_PATTERN = re.compile(
 MAX_MESSAGES = 100  # keep list small
 FREQUENCY_EXPIRE_SECONDS = 30 * 60  # 30 minutes
 
+def get_slt_now():
+    return datetime.now(ZoneInfo("America/Los_Angeles"))
+
+def get_slt_hour():
+    return get_slt_now().hour
+
+
 def get_channel(freq):
     now = time.time()
 
@@ -170,7 +178,6 @@ def can_transmit_on_frequency(freq, sender_uuid):
 # -------------------------------------------------------------------
 # Helicopter detection (JSON-driven)
 # -------------------------------------------------------------------
-
 def is_helicopter_request(request_text: str, callsign: str) -> bool:
     text = (request_text or "").lower()
     cs = (callsign or "").lower()
@@ -500,6 +507,27 @@ def physical_id_for_runway_end(tower: dict, runway_end: str) -> str | None:
             return r.get("physical_id") or r.get("id")
     return None
 
+def get_current_window(config, now=None):
+    if now is None:
+        now = get_slt_now()  # <-- SLT here
+
+    hour = now.hour
+    windows = config.get("time_windows", {})
+
+    for name, window in windows.items():
+        start = window["start_hour"]
+        end = window["end_hour"]
+
+        if start < end:
+            if start <= hour < end:
+                return name
+        else:
+            # Wraps past midnight (e.g. 21 → 05)
+            if hour >= start or hour < end:
+                return name
+
+    return "AFTERNOON"  # safe fallback
+
 def init_weather_zones():
     for icao, ap in ATC_TOWERS.items():
         zone_name = ap.get("weather_zone") or icao.upper()
@@ -544,19 +572,63 @@ def make_initial_weather_state(zone_name: str) -> dict:
 def step_value(value, step, min_v, max_v):
     return max(min_v, min(max_v, value + random.randint(-step, step)))
 
-def pick_next_condition(current: str) -> str:
-    cfg = CONDITION_CONFIGS.get(current, {})
-    transitions = cfg.get("transition", [])
+def pick_next_condition(config, zone_name, current_condition=None, now=None):
+    zones = config["zones"]
+    cond_def = config["conditions"]
 
-    for t in transitions:
-        if random.random() < t.get("chance", 0.0):
-            return t["to"]
+    zone = zones[zone_name]
+    time_window = get_current_window(config, now)  # e.g. "AFTERNOON"
 
-    # If none hit, stay where we are
-    return current
+    # 1) Decide candidate conditions
+    if current_condition:
+        # Use transitions from the current condition
+        base = cond_def[current_condition]
+        transitions = base.get("transition", [])
+
+        # Include "stay the same" as an implicit option
+        candidates = [(current_condition, 1.0)]
+        for t in transitions:
+            candidates.append((t["to"], t["chance"]))
+    else:
+        # No current condition: pick from the zone's favored list
+        conds = zone.get("favored_conditions") or config["defaults"]["favored_conditions"]
+        candidates = [(c, 1.0) for c in conds]
+
+    # 2) Apply time-of-day bias
+    weighted = []
+    for name, base_chance in candidates:
+        cdef = cond_def.get(name, {})
+        time_bias = 1.0
+
+        if time_window:
+            bias_map = cdef.get("time_bias", {})
+            time_bias = bias_map.get(time_window, 1.0)
+
+        weight = base_chance * time_bias
+        if weight > 0:
+            weighted.append((name, weight))
+
+    # Safety: if everything got zero’d somehow
+    if not weighted:
+        # fallback to current_condition or CLEAR
+        return current_condition or "CLEAR"
+
+    # 3) Random choice using weights
+    total = sum(w for _, w in weighted)
+    r = random.random() * total
+    upto = 0.0
+
+    for name, w in weighted:
+        upto += w
+        if r <= upto:
+            return name
+
+    # Fallback
+    return weighted[-1][0]
 
 def update_zone_weather(state: dict):
-    cfg = get_zone_defaults(state["zone"])
+    zone_name = state["zone"]
+    cfg = get_zone_defaults(zone_name)
 
     wind_min = cfg.get("wind_min", 0)
     wind_max = cfg.get("wind_max", 20)
@@ -576,7 +648,8 @@ def update_zone_weather(state: dict):
     state["qnh"] = step_value(state["qnh"], 1, qnh_mean - qnh_var, qnh_mean + qnh_var)
 
     # Condition transition using config
-    new_cond = pick_next_condition(state["condition"])
+    current_cond = state.get("condition")
+    new_cond = pick_next_condition(WEATHER_CONFIG, zone_name, current_cond)
     state["condition"] = new_cond
 
     cond_cfg = CONDITION_CONFIGS.get(new_cond, {})

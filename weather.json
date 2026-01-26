@@ -9,6 +9,13 @@
     "favored_conditions": ["CLEAR", "FEW", "BKN"]
   },
 
+  "time_windows": {
+    "MORNING":   { "start_hour": 5,  "end_hour": 11 },
+    "AFTERNOON": { "start_hour": 11, "end_hour": 17 },
+    "EVENING":   { "start_hour": 17, "end_hour": 21 },
+    "NIGHT":     { "start_hour": 21, "end_hour": 5 }
+  },
+
   "zones": {
     "NORTH_MARITIME": {
         "base_temp": 12,
@@ -80,7 +87,7 @@
         "wind_max": 22,
         "qnh_mean": 1017,
         "qnh_variation": 7,
-        "favored_conditions": ["BKN", "OVC", "RAIN", "FEW"]
+        "favored_conditions": ["BKN", "OVC", "SNOW", "RAIN", "FEW"]
     },
     "BELLESARIA_MIXED": {
         "base_temp": 18,
@@ -99,6 +106,42 @@
         "qnh_mean": 1012,
         "qnh_variation": 7,
         "favored_conditions": ["CLEAR","FEW","BKN","OVC","SNOW","MIST","FOG"]
+    },
+    "SANSARA_SNOWLANDS": {
+        "base_temp": -6,
+        "temp_variation": 4,
+        "wind_min": 6,
+        "wind_max": 30,
+        "qnh_mean": 1014,
+        "qnh_variation": 8,
+        "favored_conditions": ["SNOW","OVC","BKN","FOG"]
+    },
+    "SANSARA_MOUNTAINS": {
+        "base_temp": 10,
+        "temp_variation": 6,
+        "wind_min": 4,
+        "wind_max": 28,
+        "qnh_mean": 1013,
+        "qnh_variation": 9,
+        "favored_conditions": ["BKN","OVC","RAIN","FOG","MIST"]
+    },
+    "HETEROCERA_TROPICAL": {
+        "base_temp": 29,
+        "temp_variation": 3,
+        "wind_min": 2,
+        "wind_max": 20,
+        "qnh_mean": 1011,
+        "qnh_variation": 5,
+        "favored_conditions": ["FEW","BKN","MONSOON","STORM"]
+    },
+    "GAETA_COASTAL_PLAINS": {
+        "base_temp": 21,
+        "temp_variation": 4,
+        "wind_min": 6,
+        "wind_max": 26,
+        "qnh_mean": 1016,
+        "qnh_variation": 6,
+        "favored_conditions": ["CLEAR","FEW","HAZE","DUST","FOG"]
     }
   },
 
@@ -110,7 +153,13 @@
             "icon": "sun",
             "transition": [
                 { "to": "FEW", "chance": 0.15 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   0.9,
+                "AFTERNOON": 1.3,
+                "EVENING":   1.2,
+                "NIGHT":     0.8
+            }
         },
         "FEW": {
             "description": "few clouds",
@@ -120,7 +169,13 @@
             "transition": [
                 { "to": "CLEAR", "chance": 0.20 },
                 { "to": "BKN",  "chance": 0.10 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   1.0,
+                "AFTERNOON": 1.2,
+                "EVENING":   1.1,
+                "NIGHT":     0.9
+            }
         },
         "BKN": {
             "description": "broken clouds",
@@ -131,7 +186,13 @@
                 { "to": "FEW", "chance": 0.15 },
                 { "to": "OVC", "chance": 0.10 },
                 { "to": "RAIN","chance": 0.05 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   1.0,
+                "AFTERNOON": 1.1,
+                "EVENING":   1.1,
+                "NIGHT":     1.0
+            }
         },
         "OVC": {
             "description": "overcast",
@@ -144,7 +205,13 @@
                 { "to": "STORM","chance": 0.03 },
                 { "to": "MIST", "chance": 0.05 },
                 { "to": "FOG",  "chance": 0.02 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   1.2,
+                "AFTERNOON": 0.9,
+                "EVENING":   1.1,
+                "NIGHT":     1.1
+            }
         },
         "RAIN": {
             "description": "rain",
@@ -156,7 +223,13 @@
                 { "to": "STORM","chance": 0.05 },
                 { "to": "BKN",  "chance": 0.10 },
                 { "to": "MIST", "chance": 0.05 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   0.8,
+                "AFTERNOON": 1.3,
+                "EVENING":   1.3,
+                "NIGHT":     0.9
+            }
         },
         "STORM": {
             "description": "thunderstorms",
@@ -166,7 +239,30 @@
             "transition": [
                 { "to": "RAIN", "chance": 0.20 },
                 { "to": "OVC",  "chance": 0.10 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   0.4,
+                "AFTERNOON": 1.6, 
+                "EVENING":   1.3,
+                "NIGHT":     0.8
+            }
+        },
+        "MONSOON": {
+            "description": "heavy tropical rain showers",
+            "visibility": "POOR",
+            "style": "IFR",
+            "icon": "rain_heavy",
+            "transition": [
+                { "to": "STORM", "chance": 0.15 },
+                { "to": "RAIN",  "chance": 0.30 },
+                { "to": "BKN",   "chance": 0.10 }
+            ],
+            "time_bias": {
+                "MORNING":   0.5,
+                "AFTERNOON": 2.0, 
+                "EVENING":   1.2,
+                "NIGHT":     0.6
+            }
         },
         "MIST": {
             "description": "mist and reduced visibility",
@@ -177,7 +273,13 @@
                 { "to": "FOG",  "chance": 0.10 },
                 { "to": "OVC",  "chance": 0.15 },
                 { "to": "BKN",  "chance": 0.10 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   1.6,
+                "AFTERNOON": 0.6,
+                "EVENING":   1.3,
+                "NIGHT":     1.3
+            }
         },
         "FOG": {
             "description": "fog, significantly reduced visibility",
@@ -187,7 +289,30 @@
             "transition": [
                 { "to": "MIST", "chance": 0.20 },
                 { "to": "OVC",  "chance": 0.10 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   2.0,  
+                "AFTERNOON": 0.3,
+                "EVENING":   1.2,
+                "NIGHT":     1.5
+            }
+        },
+        "DUST": {
+            "description": "dust haze and blowing sand",
+            "visibility": "MODERATE",
+            "style": "MVFR",
+            "icon": "dust",
+            "transition": [
+                { "to": "HAZE", "chance": 0.20 },
+                { "to": "CLEAR","chance": 0.15 },
+                { "to": "BKN",  "chance": 0.05 }
+            ],
+            "time_bias": {
+                "MORNING":   0.7,
+                "AFTERNOON": 1.5, 
+                "EVENING":   1.2,
+                "NIGHT":     0.6
+            }
         },
         "HAZE": {
             "description": "haze, slightly reduced visibility",
@@ -198,7 +323,13 @@
                 { "to": "CLEAR", "chance": 0.15 },
                 { "to": "FEW",   "chance": 0.20 },
                 { "to": "BKN",   "chance": 0.05 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   0.7,
+                "AFTERNOON": 1.5,
+                "EVENING":   1.4,
+                "NIGHT":     0.8
+            }
         },
         "SNOW": {
             "description": "snow showers",
@@ -209,7 +340,13 @@
                 { "to": "OVC",  "chance": 0.20 },
                 { "to": "STORM","chance": 0.05 },
                 { "to": "BKN",  "chance": 0.10 }
-            ]
+            ],
+            "time_bias": {
+                "MORNING":   1.2,
+                "AFTERNOON": 1.1,
+                "EVENING":   1.2,
+                "NIGHT":     0.9
+            }
         }
     }
 }
