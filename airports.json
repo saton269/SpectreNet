@@ -86,6 +86,13 @@
         "landing_ends": ["14"],
         "takeoff_ends": ["32"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Juneau South",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLKA": {
@@ -105,6 +112,18 @@
         "landing_ends": ["10"],
         "takeoff_ends": ["28"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Asker 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Asker 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLSV": {
@@ -124,6 +143,18 @@
         "landing_ends": ["09"],
         "takeoff_ends": ["27"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Reine 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Reine 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLFJ": {
@@ -162,6 +193,13 @@
         "landing_ends": ["09"],
         "takeoff_ends": ["27"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Toka 1",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLSQ": {
@@ -219,6 +257,13 @@
         "landing_ends": ["19","36"],
         "takeoff_ends": ["36","19"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Gunvor 1",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLAC": {
@@ -238,6 +283,13 @@
         "landing_ends": ["18"],
         "takeoff_ends": ["36"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Fraiser Island 1",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLTH": {
@@ -263,6 +315,28 @@
         "landing_ends": [],
         "takeoff_ends": ["36L"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Dobinson 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Dobinson 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Dobinson 3",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Dobinson 4",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLEO": {
@@ -313,6 +387,33 @@
         "landing_ends": ["27"],
         "takeoff_ends": ["09"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Quietly Red 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Quietly Red 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Quietly Red 3",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Quietly Red 4",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H5",
+          "name": "Quietly Red 5",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLEQ": {
@@ -332,6 +433,33 @@
         "landing_ends": ["27"],
         "takeoff_ends": ["09"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Lesters Best 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Lesters Best 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Lesters Best 3",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Lesters Best 4",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H5",
+          "name": "Lesters Best 5",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLBK": {
@@ -351,6 +479,13 @@
         "landing_ends": ["27"],
         "takeoff_ends": ["09"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Devolin Mal 1",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLHX": {
@@ -414,6 +549,18 @@
         "landing_ends": ["36"],
         "takeoff_ends": ["18"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Acknefar 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Acknefar 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLMG": {
@@ -433,6 +580,18 @@
         "landing_ends": ["27"],
         "takeoff_ends": ["09"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Nautilus Yarikh 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Nautilus Yarikh 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLNL": {
@@ -452,6 +611,18 @@
         "landing_ends": [],
         "takeoff_ends": []
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Nautilut Adherbal 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Nautilut Adherbal 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLCW": {
@@ -471,6 +642,23 @@
         "landing_ends": ["27"],
         "takeoff_ends": ["09"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Tsurington 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Tsurington 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Tsurington 3",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLDF": {
@@ -521,6 +709,18 @@
         "landing_ends": ["27C"],
         "takeoff_ends": ["09C"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Nuggy 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Nuggy 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLCS": {
@@ -546,6 +746,18 @@
         "landing_ends": ["27R"],
         "takeoff_ends": []
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Venrigalli 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Venrigalli 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLBM": {
@@ -565,6 +777,13 @@
         "landing_ends": ["09"],
         "takeoff_ends": ["27"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Froog 1",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLAN": {
@@ -602,6 +821,28 @@
         "landing_ends": ["27"],
         "takeoff_ends": ["09"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Boing 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Boing 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Boing 3",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Boing 2",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLSY": {
@@ -627,6 +868,13 @@
         "landing_ends": ["34"],
         "takeoff_ends": ["16"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Shell Yeah 1",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLBL": {
@@ -741,6 +989,28 @@
         "landing_ends": ["H1"],
         "takeoff_ends": ["H2"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Galaxy Mid",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Galaxy Mid",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Galaxy AFT",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Galaxy AFT",
+          "max_simultaneous": 1
+        }
       ]
     }
   }

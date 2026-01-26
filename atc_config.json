@@ -274,7 +274,6 @@
       "{CALLSIGN}, takeoff approved, caution ground traffic.",
       "{CALLSIGN}, cleared for departure from helipad {HELIPAD}."
     ],
-
     "helicopter_landing": [
       "{CALLSIGN}, cleared to land at the helipad.",
       "{CALLSIGN}, cleared to land at helipad {HELIPAD}",
