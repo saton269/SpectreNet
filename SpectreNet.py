@@ -19,7 +19,6 @@ logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
 app.logger.info("🔥 ATC server starting up, custom logging should be visible")
-print("🔥 ATC server print() starting up")  # this *definitely* goes to Render logs
 
 # Load airports and triggers from JSON
 with open("airports.json", "r") as f:
@@ -69,7 +68,14 @@ POSSIBLE_EMERGENCY_TRIGGERS = EMERGENCY_TRIGGERS.get("possible_emergency_trigger
 GROUND_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("taxi", []) + TRIGGER_PHRASES.get("startup", []))
 TOWER_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("takeoff", []) + TRIGGER_PHRASES.get("landing", []))
 STARTUP_TRIGGER_PHRASES = tuple(TRIGGER_PHRASES.get("startup", []))
-EMERGENCY_TRIGGER_PHRASES = tuple(EMERGENCY_TRIGGERS.get("mayday", []) + EMERGENCY_TRIGGERS.get("pan", []) + EMERGENCY_TRIGGERS.get("generic", []))
+
+# Combine and normalize all emergency trigger phrases once at startup
+_EMERGENCY_TRIGGER_LIST = (
+    EMERGENCY_TRIGGERS.get("mayday", [])
+    + EMERGENCY_TRIGGERS.get("pan", [])
+    + EMERGENCY_TRIGGERS.get("generic", [])
+)
+EMERGENCY_TRIGGER_PHRASES = tuple(p.lower() for p in _EMERGENCY_TRIGGER_LIST)
 
 FLIGHT_PLAN_CONFIG = atc_config.get("flight_plan", {})
 FP_TRIGGERS = [t.lower() for t in FLIGHT_PLAN_CONFIG.get("triggers", [])]
@@ -917,6 +923,7 @@ def housekeeping(force: bool = False):
     cleanup_expired_frequencies(now)
     cleanup_stale_emergencies(now)
     cleanup_stale_flight_plans(now)
+    cleanup_helipads(now)
 
 def format_freq(freq):
     if freq < 1000:
@@ -928,15 +935,12 @@ def format_freq(freq):
 
 def get_runway_state(airport, runway):
     airport_state = RUNWAY_STATE.setdefault(airport, {})
-    state = airport_state.get(runway)
-    if not state:
-        state = {
+    return airport_state.setdefault(runway, {
             "active": None,          # dict or None
             "queue": deque(),             # waiting aircraft
             "expires_at": 0
-        }
-        airport_state[runway] = state
-    return state
+        },
+    )
 
 def runway_active(state):
     return state["active"] and time.time() < state["expires_at"]
@@ -1845,7 +1849,6 @@ def get_state():
 def send_message():
     housekeeping()
     process_runway_sequencing()
-    cleanup_helipads()
     update_all_weather()
 
     data = request.get_json(force=True)
@@ -1906,7 +1909,6 @@ def send_message():
 def fetch_messages():
     housekeeping()
     process_runway_sequencing()
-    cleanup_helipads()
 
     freq = int(request.args.get("frequency", 16))
     since_id = int(request.args.get("since_id", 0))
