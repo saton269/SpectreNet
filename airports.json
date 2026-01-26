@@ -23,6 +23,13 @@
         "landing_ends": [],
         "takeoff_ends": ["18L"]
       }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Santa Catalina",
+          "max_simultaneous": 1
+        }
       ]
     },
     "SLSN": {
