@@ -1189,12 +1189,49 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     occ_map = HELIPAD_OCCUPANCY.get(airport_code, {})
 
                     if pad_map:
-                        # Did they request a specific helipad?
+                        pad_count = len(pad_map)
                         requested_helipad = find_requested_helipad(airport_code, original_request_text)
+
                         if requested_helipad and requested_helipad in pad_map:
-                            helipad_id = requested_helipad
+                            requested_helipad = requested_helipad.upper()
+
+                            max_sim = int(pad_map[requested_helipad].get("max_simultaneous", 1))
+                            current = int(occ_map.get(requested_helipad, 0))
+
+                            if current < max_sim:
+                                # Requested pad has room
+                                helipad_id = requested_helipad
+                            else:
+                                # Requested pad is full
+                                if pad_count > 1:
+                                    # Divert to next open helipad
+                                    for pid, pad_cfg in pad_map.items():
+                                        if pid == requested_helipad:
+                                            continue
+                                        max_sim_alt = int(pad_cfg.get("max_simultaneous", 1))
+                                        current_alt = int(occ_map.get(pid, 0))
+                                        if current_alt < max_sim_alt:
+                                            helipad_id = pid
+                                            break
+
+                                    if not helipad_id:
+                                        # All helipads are full at a multi-pad airport → hold
+                                        hold_text = (
+                                            f"{callsign}, all helipads are currently occupied, standby."
+                                        )
+                                        hold_text = hold_text[0].upper() + hold_text[1:]
+                                        return hold_text, sender_name
+                                else:
+                                    # Only 1 helipad and it's full → allow landing anywhere
+                                    anywhere_text = (
+                                        f"{callsign}, helipad {requested_helipad} is occupied, "
+                                        f"cleared to land anywhere on the field."
+                                    )
+                                    anywhere_text = anywhere_text[0].upper() + anywhere_text[1:]
+                                    return anywhere_text, sender_name
+
                         else:
-                            # Auto-assign first pad with free slot
+                            # No specific helipad requested: auto-pick first with space
                             for pid, pad_cfg in pad_map.items():
                                 max_sim = int(pad_cfg.get("max_simultaneous", 1))
                                 current = int(occ_map.get(pid, 0))
@@ -1202,18 +1239,30 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                                     helipad_id = pid
                                     break
 
-                        if not helipad_id:
-                            # All pads full
-                            hold_text = f"{callsign}, all helipads are currently occupied, standby."
-                            hold_text = hold_text[0].upper() + hold_text[1:]
-                            return hold_text, sender_name
+                            if not helipad_id:
+                                # No pad requested and all pads are full
+                                if pad_count == 1:
+                                    # Single-pad airport: let them land anywhere
+                                    only_id = next(iter(pad_map.keys()))
+                                    anywhere_text = (
+                                        f"{callsign}, helipad {only_id} is occupied, "
+                                        f"cleared to land anywhere on the field."
+                                    )
+                                    anywhere_text = anywhere_text[0].upper() + anywhere_text[1:]
+                                    return anywhere_text, sender_name
+                                else:
+                                    # Multi-pad airport: hold for space
+                                    hold_text = (
+                                        f"{callsign}, all helipads are currently occupied, standby."
+                                    )
+                                    hold_text = hold_text[0].upper() + hold_text[1:]
+                                    return hold_text, sender_name
 
-                        # For helicopters using helipads, we do NOT pick a runway
-                        logical_runway_id = None
-                        runway = ""  # no runway used
-                    else:
-                        # No helipads defined; fall back to normal runway logic below
-                        pass
+                        # If we got here with a helipad_id, we intentionally do NOT pick a runway
+                        if helipad_id:
+                            logical_runway_id = None
+                            runway = ""
+                    # If no pad_map: fall through into normal runway logic below
 
                 if action in ("landing", "takeoff"):
                     if action == "takeoff":
