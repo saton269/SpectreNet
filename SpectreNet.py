@@ -110,6 +110,10 @@ DEFAULT_FREQUENCY = 16
 
 RUNWAY_RE = re.compile(r"\b(?:runway|rwy)\s*([0-3]?\d)\s*([LRC])?\b", re.IGNORECASE)
 PILOT_ASSIGNED_RUNWAY = {}
+PILOT_ASSIGNED_HELIPAD: dict[tuple[str, str], str] = {}  # (ICAO, CALLSIGN) -> helipad id
+PILOT_HELIPAD_LAST_ACTIVITY: dict[tuple[str, str], float] = {}
+HELIPAD_TTL_SECONDS = 1800  # e.g. 30 minutes; tune as you like
+
 
 ROUTE_PATTERN = re.compile(
     r"\b([A-Z0-9]{3,4})\s*(?:>|to|-|–)\s*([A-Z0-9]{3,4})\b",
@@ -353,73 +357,92 @@ def find_requested_helipad(airport_code: str, request_text: str) -> str | None:
 
     return None
 
-def assign_helipad(airport_code: str, requested_id: str | None):
+def assign_helipad(airport_code: str, requested_id: str | None, action: str):
     """
     Decide which helipad a helicopter should use at this airport.
+
+    For LANDING:
+      - Respect occupancy.
+      - Multi-pad: requested full -> divert to another; if all full -> "hold".
+      - Single-pad: if full -> "anywhere" (land anywhere on the field).
+
+    For TAKEOFF:
+      - Ignore occupancy. Never returns "hold" or "anywhere".
+      - Use requested pad if valid, otherwise first configured pad.
 
     Returns:
       (assigned_helipad_id, mode)
 
-    Where `mode` can be:
-      - None        → normal helipad assignment
-      - "anywhere"  → single-pad airport full; clear them to land anywhere
-      - "hold"      → multi-pad airport with all pads full; tell them to standby
+    mode:
+      - None        -> normal helipad assignment
+      - "anywhere"  -> (LANDING only) single-pad, full
+      - "hold"      -> (LANDING only) multi-pad, all full
     """
     pad_map = HELIPADS_BY_AIRPORT.get(airport_code, {})
     if not pad_map:
-        return None, None  # no helipads at this airport
+        return None, None  # no helipads here
 
     occ_map = HELIPAD_OCCUPANCY.setdefault(airport_code, {})
     pad_ids = list(pad_map.keys())
     pad_count = len(pad_ids)
 
-    # Make sure we at least have keys in occ_map
+    # make sure keys exist in occ_map
     for pid in pad_ids:
         occ_map.setdefault(pid, 0)
 
-    # Normalize requested id
     requested_id = (requested_id or "").upper() or None
 
-    # Helper: is this pad available?
+    # ----------------------------------------
+    # TAKEOFF: do NOT enforce occupancy
+    # ----------------------------------------
+    if action == "takeoff":
+        # prefer requested pad if it exists
+        if requested_id and requested_id in pad_map:
+            return requested_id, None
+
+        # otherwise just use first pad
+        return pad_ids[0], None
+
+    # ----------------------------------------
+    # LANDING: enforce occupancy/diversion rules
+    # ----------------------------------------
+
     def has_space(pid: str) -> bool:
         pad_cfg = pad_map[pid]
         max_sim = int(pad_cfg.get("max_simultaneous", 1))
         current = int(occ_map.get(pid, 0))
         return current < max_sim
 
-    # 1) If they requested a specific pad, try that first
+    # 1) Requested specific pad
     if requested_id and requested_id in pad_map:
         if has_space(requested_id):
-            return requested_id, None   # they get what they asked for
+            return requested_id, None
 
-        # Requested pad is full
         if pad_count == 1:
-            # Only 1 pad: don't block them, let them land anywhere
+            # single pad, full -> land anywhere
             return None, "anywhere"
 
-        # Multi-pad: try to divert to a different pad with space
+        # multi-pad: try to divert
         for pid in pad_ids:
             if pid == requested_id:
                 continue
             if has_space(pid):
                 return pid, None
 
-        # All pads are full at a multi-pad airport
+        # all pads full
         return None, "hold"
 
-    # 2) No specific pad requested: auto-pick first with space
+    # 2) No specific pad requested: pick any with space
     available = [pid for pid in pad_ids if has_space(pid)]
-
     if available:
         return available[0], None
 
-    # 3) No pad requested and none have space
+    # 3) None have space
     if pad_count == 1:
-        # Single-pad: let them land anywhere
         return None, "anywhere"
 
-    # Multi-pad and all full → hold
     return None, "hold"
+
 
 def runway_ends_for_action(tower: dict, action: str) -> set[str]:
     """
@@ -780,6 +803,33 @@ def cleanup_expired_frequencies(now: float | None = None):
         if now - data.get("last_active", now) > FREQUENCY_EXPIRE_SECONDS:
             channels.pop(freq, None)
 
+def cleanup_helipads(now: float | None = None):
+    """
+    Rebuild helipad occupancy from active pilot assignments,
+    and drop stale pilot->helipad mappings after HELIPAD_TTL_SECONDS.
+    """
+    if now is None:
+        now = time.time()
+
+    # 1) Drop stale pilot assignments
+    for key, ts in list(PILOT_HELIPAD_LAST_ACTIVITY.items()):
+        if now - ts > HELIPAD_TTL_SECONDS:
+            PILOT_HELIPAD_LAST_ACTIVITY.pop(key, None)
+            PILOT_ASSIGNED_HELIPAD.pop(key, None)
+
+    # 2) Reset all helipad occupancy to 0
+    for icao, pad_map in HELIPADS_BY_AIRPORT.items():
+        occ_map = HELIPAD_OCCUPANCY.setdefault(icao, {})
+        for pad_id in pad_map.keys():
+            occ_map[pad_id] = 0
+
+    # 3) Rebuild occupancy based on remaining (non-stale) pilot assignments
+    for (icao, callsign), pad_id in PILOT_ASSIGNED_HELIPAD.items():
+        occ_map = HELIPAD_OCCUPANCY.setdefault(icao, {})
+        if pad_id in occ_map:
+            occ_map[pad_id] = occ_map.get(pad_id, 0) + 1
+
+
 def housekeeping(force: bool = False):
     """
     Throttled cleanup to keep request handlers light.
@@ -794,6 +844,7 @@ def housekeeping(force: bool = False):
     cleanup_expired_frequencies(now)
     cleanup_stale_emergencies(now)
     cleanup_stale_flight_plans(now)
+    cleanup_helipads(now)
 
 def format_freq(freq):
     if freq < 1000:
@@ -1253,10 +1304,16 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
 
                 # Helicopter → prefer helipads if defined for this airport
                 if is_helicopter and action in ("landing", "takeoff"):
-                    # See if they mentioned a specific pad (H1, H2, HOSP, etc.)
+                    # Did they mention a specific pad in the text?
                     requested_helipad = find_requested_helipad(airport_code, original_request_text)
 
-                    helipad_id, helipad_mode = assign_helipad(airport_code, requested_helipad)
+                    # For takeoff: if they didn’t say a pad, try the pad we remembered from landing
+                    if action == "takeoff" and not requested_helipad:
+                        remembered_pad = PILOT_ASSIGNED_HELIPAD.get(pilot_key)
+                        if remembered_pad:
+                            requested_helipad = remembered_pad
+
+                    helipad_id, helipad_mode = assign_helipad(airport_code, requested_helipad, action)
 
                     if helipad_mode == "hold":
                         # Multi-pad airport, all pads full
@@ -1586,13 +1643,19 @@ def handle_atc(message_text: str, channel: int, sender_name: str):
                     
 
                 # --- Helipad occupancy bookkeeping ---
-                if is_helicopter and helipad_id and action == "landing":
-                    occ_map = HELIPAD_OCCUPANCY.get(airport_code, {})
-                    occ_map[helipad_id] = occ_map.get(helipad_id, 0) + 1
+                                # --- Helipad bookkeeping (pilot assignment only; occupancy is derived) ---
+                now_ts = time.time()
 
-                if is_helicopter and helipad_id and action == "takeoff":
-                    occ_map = HELIPAD_OCCUPANCY.get(airport_code, {})
-                    occ_map[helipad_id] = max(0, occ_map.get(helipad_id, 0) - 1)
+                if is_helicopter and helipad_id and action == "landing":
+                    # Remember which pad this pilot is on
+                    PILOT_ASSIGNED_HELIPAD[pilot_key] = helipad_id
+                    PILOT_HELIPAD_LAST_ACTIVITY[pilot_key] = now_ts
+
+                if is_helicopter and action == "takeoff":
+                    # Pilot is leaving; drop their pad assignment
+                    if pilot_key in PILOT_ASSIGNED_HELIPAD:
+                        PILOT_ASSIGNED_HELIPAD.pop(pilot_key, None)
+                    PILOT_HELIPAD_LAST_ACTIVITY.pop(pilot_key, None)
 
 
                 if helicopter_full_text:
