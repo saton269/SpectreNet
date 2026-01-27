@@ -731,7 +731,7 @@ def format_metar_from_state(icao: str, state: dict | None) -> str | None:
         return None
 
     # Time: DDHHMMZ in UTC
-    now = datetime.utcnow()
+    now = datetime.now()
     time_str = now.strftime("%d%H%MZ")
 
     # Wind
@@ -763,18 +763,57 @@ def format_metar_from_state(icao: str, state: dict | None) -> str | None:
 
     # Clouds from your "condition" string
     cond = (state.get("condition") or "").upper()
-    if cond == "FEW":
-        clouds_str = "FEW020"
-    elif cond in ("SCT", "SCATTERED"):
-        clouds_str = "SCT025"
-    elif cond in ("BKN", "BROKEN"):
-        clouds_str = "BKN030"
-    elif cond in ("OVC", "OVERCAST"):
-        clouds_str = "OVC015"
-    elif cond in ("CLR", "CLEAR", "SKC"):
+
+    wx_str = ""
+    clouds_str = ""
+
+    if cond == "CLEAR":
         clouds_str = "SKC"
+
+    elif cond == "FEW":
+        clouds_str = "FEW020"
+
+    elif cond == "BKN":
+        clouds_str = "BKN030"
+
+    elif cond == "OVC":
+        clouds_str = "OVC015"
+
+    elif cond == "RAIN":
+        wx_str = "RA"
+        clouds_str = "BKN025"
+
+    elif cond == "STORM":
+        wx_str = "TSRA"
+        clouds_str = "BKN030CB"
+
+    elif cond == "MONSOON":
+        wx_str = "+RA"
+        clouds_str = "OVC020"
+
+    elif cond == "SNOW":
+        wx_str = "SN"
+        clouds_str = "OVC020"
+
+    elif cond == "MIST":
+        wx_str = "BR"
+        clouds_str = "FEW005"
+
+    elif cond == "FOG":
+        wx_str = "FG"
+        clouds_str = "OVC003"
+
+    elif cond == "HAZE":
+        wx_str = "HZ"
+        clouds_str = "NSC"
+
+    elif cond == "DUST":
+        wx_str = "DU"
+        clouds_str = "NSC"
+
     else:
         clouds_str = "NSC"
+
 
     # Temperature / (fake) dewpoint
     try:
@@ -805,7 +844,18 @@ def format_metar_from_state(icao: str, state: dict | None) -> str | None:
         style = "VFR"
 
     # Final body: ICAO DDHHMMZ ...
-    return f"{icao} {time_str} {wind_str} {vis_str} {clouds_str} {temp_str}/{dew_str} {qnh_str} {style}"
+    parts = [icao, time_str, wind_str, vis_str]
+
+    # Insert weather group if present (RA/TSRA/FG/etc.)
+    if wx_str:
+        parts.append(wx_str)
+
+    parts.append(clouds_str)
+    parts.append(f"{temp_str}/{dew_str}")
+    parts.append(qnh_str)
+    parts.append(style)
+
+    return " ".join(parts)
 
 
 def format_weather_report(icao: str) -> str | None:
