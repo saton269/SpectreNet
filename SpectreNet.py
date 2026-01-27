@@ -134,12 +134,35 @@ DEST_ONLY_PATTERN = re.compile(
 MAX_MESSAGES = 100  # keep list small
 FREQUENCY_EXPIRE_SECONDS = 30 * 60  # 30 minutes
 
+SL_DAY_SECONDS = 4 * 60 * 60  # 4 hours = 14,400 seconds
+
+def get_sl_cycle_fraction(now=None):
+    """
+    Returns a float from 0.0–1.0 representing
+    where we are in SL's 4-hour day cycle.
+    """
+    if now is None:
+        now = time.time()
+
+    return (now % SL_DAY_SECONDS) / SL_DAY_SECONDS
+
+def get_sl_day_window(now=None):
+    frac = get_sl_cycle_fraction(now)
+
+    if frac < 0.25:
+        return "MORNING"
+    elif frac < 0.50:
+        return "AFTERNOON"
+    elif frac < 0.75:
+        return "EVENING"
+    else:
+        return "NIGHT"
+
 def get_slt_now():
     return datetime.now(ZoneInfo("America/Los_Angeles"))
 
 def get_slt_hour():
     return get_slt_now().hour
-
 
 def get_channel(freq):
     now = time.time()
@@ -583,7 +606,7 @@ def pick_next_condition(config, zone_name, current_condition=None, now=None):
     cond_def = config["conditions"]
 
     zone = zones[zone_name]
-    time_window = get_current_window(config, now)  # e.g. "AFTERNOON"
+    time_window = get_sl_day_window()  # e.g. "AFTERNOON"
 
     # 1) Decide candidate conditions
     if current_condition:
