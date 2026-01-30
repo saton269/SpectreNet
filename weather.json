@@ -89,6 +89,25 @@
         "qnh_variation": 7,
         "favored_conditions": ["BKN", "OVC", "SNOW", "RAIN", "FEW"]
     },
+    "SATORI_INTERIOR_PLAINS": {
+        "base_temp": 19,
+        "temp_variation": 5,
+        "wind_min": 2,
+        "wind_max": 18,
+        "qnh_mean": 1015,
+        "qnh_variation": 6,
+        "favored_conditions": ["CLEAR", "FEW", "BKN", "HAZE"]
+    },
+    "SATORI_COASTAL_MARITIME": {
+        "base_temp": 16,
+        "temp_variation": 4,
+        "wind_min": 4,
+        "wind_max": 24,
+        "qnh_mean": 1016,
+        "qnh_variation": 7,
+        "favored_conditions": ["FEW","BKN","OVC","SEA_FOG","MIST","RAIN"
+        ]
+    },
     "BELLESARIA_MIXED": {
         "base_temp": 18,
         "temp_variation": 4,
@@ -295,6 +314,23 @@
                 "AFTERNOON": 0.3,
                 "EVENING":   1.2,
                 "NIGHT":     1.5
+            }
+        },
+        "SEA_FOG": {
+            "description": "dense sea fog rolling in from open water",
+            "visibility": "POOR",
+            "style": "IFR",
+            "icon": "fog",
+            "transition": [
+                { "to": "MIST", "chance": 0.30 },
+                { "to": "BKN",  "chance": 0.15 },
+                { "to": "OVC",  "chance": 0.10 }
+            ],
+            "time_bias": {
+                "MORNING":   2.2,
+                "AFTERNOON": 0.3,
+                "EVENING":   1.3,
+                "NIGHT":     1.7
             }
         },
         "DUST": {

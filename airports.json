@@ -510,7 +510,7 @@
     "SLBH": {
       "name": "Bruissac Harbor",
       "sender": "SLBH ATC",
-      "weather_zone": "COASTAL_MIXED",
+      "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 119200,
       "tower_frequency": 122800, 
       "ground_frequency": 121625, 
@@ -1011,6 +1011,502 @@
           "name": "Galaxy AFT",
           "max_simultaneous": 1
         }
+      ]
+    },
+    "SLRM": {
+      "name": "AK RomMil Airport",
+      "sender": "SLRM ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 129375, 
+      "ground_frequency": 121625, 
+      "landings": ["18R"],
+      "departures": ["36R"],
+      "taxiways": ["Alpha"],
+      "runways": [
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["18R"],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": [],
+        "takeoff_ends": ["36R"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Alvensleben 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Alvensleben 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLJP": {
+      "name": "Janie's Landing",
+      "sender": "SJPM ATC",
+      "weather_zone": "BLAKE_SEA_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 121800, 
+      "ground_frequency": 121800, 
+      "landings": ["18R"],
+      "departures": ["36R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["26"],
+        "takeoff_ends": ["08"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Avignon",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLOH": {
+      "name": "The Horn",
+      "sender": "SLOH ATC",
+      "weather_zone": "CENTRAL_MAINLAND",
+      "frequency": 122700,
+      "tower_frequency": 129050, 
+      "ground_frequency": 129050, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Castelo 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Castelo 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLFP": {
+      "name": "Fiona's Paradise Marina",
+      "sender": "SLFP ATC",
+      "weather_zone": "COASTAL_MIXED",
+      "frequency": 122700,
+      "tower_frequency": 126150, 
+      "ground_frequency": 126150, 
+      "landings": [],
+      "departures": [],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": [],
+        "takeoff_ends": []
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Akna",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLZM": {
+      "name": "Motel Zacisze & A-A Logistics",
+      "sender": "SLZM ATC",
+      "weather_zone": "CENTRAL_MAINLAND",
+      "frequency": 122700,
+      "tower_frequency": 129625, 
+      "ground_frequency": 129625, 
+      "landings": [],
+      "departures": [],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": [],
+        "takeoff_ends": []
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Inranic 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Inranic 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Inranic 3",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Inranic 4",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLSM": {
+      "name": "Sunset Marina Imelza",
+      "sender": "SLSM ATC",
+      "weather_zone": "BELLESARIA_MIXED",
+      "frequency": 122700,
+      "tower_frequency": 128825, 
+      "ground_frequency": 128825, 
+      "landings": ["36"],
+      "departures": ["18"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["36"],
+        "takeoff_ends": ["18"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Imelza",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLSC": {
+      "name": "Dreamer's Retreat Aerodrome",
+      "sender": "SLSC ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 126375, 
+      "ground_frequency": 126375, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Egle 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Egle 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLTI": {
+      "name": "Thorncliff Intercontinental",
+      "sender": "SLTI ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 121025, 
+      "ground_frequency": 121850, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Throncliff 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Thorncliff 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLCC": {
+      "name": "Coconut Community Airfield",
+      "sender": "SLCC ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 121075, 
+      "ground_frequency": 121075, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLSE": {
+      "name": "Saneco Bay Aerodrome",
+      "sender": "SLSE ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 128775, 
+      "ground_frequency": 128775, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Mbokomu",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLTA": {
+      "name": "Talakin Airport",
+      "sender": "SLTA ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 124550, 
+      "ground_frequency": 124550, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "EMS Hospital",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Talakin 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Talakin 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLKX": {
+      "name": "NAF Krymov",
+      "sender": "SLKX ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 126775, 
+      "ground_frequency": 121600, 
+      "landings": ["18","09"],
+      "departures": ["36","27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_N",
+        "physical_id": "RWY_N",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      },
+      {
+        "id": "RWY_W",
+        "physical_id": "RWY_W",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Krymov 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Krymov 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Krymov 3",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLWW": {
+      "name": "Angels S2W",
+      "sender": "SLWW ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 120400, 
+      "ground_frequency": 121650, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Smyslov 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Smyslov 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Tseshkovsky",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLWE": {
+      "name": "Angels S2E",
+      "sender": "SLWE ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 127050, 
+      "ground_frequency": 121675, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLAO": {
+      "name": "Angel's County Runway",
+      "sender": "SLAO ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 126900, 
+      "ground_frequency": 126900, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLNH": {
+      "name": "New Horizons Intercontinental",
+      "sender": "SLNH ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 127375, 
+      "ground_frequency": 121650, 
+      "landings": ["18L"],
+      "departures": ["36L"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18L"],
+        "takeoff_ends": ["36L"]
+      }
+      ]
+    },
+    "SLSB": {
+      "name": "Molay Airstrip",
+      "sender": "SLSB ATC",
+      "weather_zone": "SATORI_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 118250, 
+      "ground_frequency": 118250, 
+      "landings": ["18L","18R","21"],
+      "departures": ["36L","36R","03"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["18L"],
+        "takeoff_ends": ["36L"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["18R"],
+        "takeoff_ends": ["36R"]
+      },
+      {
+        "id": "RWY_A",
+        "physical_id": "RWY_A",
+        "landing_ends": ["21"],
+        "takeoff_ends": ["03"]
+      }
       ]
     }
   }
