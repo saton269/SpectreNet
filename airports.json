@@ -1052,7 +1052,7 @@
     },
     "SLJP": {
       "name": "Janie's Landing",
-      "sender": "SJPM ATC",
+      "sender": "SLJP ATC",
       "weather_zone": "BLAKE_SEA_MARITIME",
       "frequency": 122700,
       "tower_frequency": 121800, 
@@ -1507,6 +1507,537 @@
         "landing_ends": ["21"],
         "takeoff_ends": ["03"]
       }
+      ]
+    },
+    "SLJI": {
+      "name": "Jinsil International Airport",
+      "sender": "SLJI ATC",
+      "weather_zone": "JEOGEOT_NORTH_TRANSITION",
+      "frequency": 122700,
+      "tower_frequency": 127875, 
+      "ground_frequency": 121625, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Jinsil",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLAF": {
+      "name": "Argo Field",
+      "sender": "SLAF ATC",
+      "weather_zone": "JEOGEOT_NORTH_TRANSITION",
+      "frequency": 122700,
+      "tower_frequency": 126400, 
+      "ground_frequency": 126400, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ]
+    },
+    "SLFN": {
+      "name": "Fennec Small Aircrafts Airport",
+      "sender": "SLFN ATC",
+      "weather_zone": "JEOGEOT_NORTH_TRANSITION",
+      "frequency": 122700,
+      "tower_frequency": 128300, 
+      "ground_frequency": 128300, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Maemilkkot",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLAD": {
+      "name": "Andrew Ansley Field",
+      "sender": "SLAD ATC",
+      "weather_zone": "JEOGEOT_INTERIOR_PLAINS",
+      "frequency": 122700,
+      "tower_frequency": 122800, 
+      "ground_frequency": 122800, 
+      "landings": ["36"],
+      "departures": ["18"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["36"],
+        "takeoff_ends": ["18"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Sanggae",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLSR": {
+      "name": "Serenity Helipad and Freight Hub",
+      "sender": "SLSR ATC",
+      "weather_zone": "JEOGEOT_SOUTHERN_EXPOSED",
+      "frequency": 122700,
+      "tower_frequency": 126400, 
+      "ground_frequency": 126400, 
+      "landings": [],
+      "departures": [],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": [],
+        "takeoff_ends": []
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Wallaroo",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLMN": {
+      "name": "Mellowtron Airfield",
+      "sender": "SLMN ATC",
+      "weather_zone": "JEOGEOT_SOUTHERN_EXPOSED",
+      "frequency": 122700,
+      "tower_frequency": 129350, 
+      "ground_frequency": 129350, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLRA": {
+      "name": "Serenity Helipad and Freight Hub",
+      "sender": "SLRA ATC",
+      "weather_zone": "JEOGEOT_INTERIOR_PLAINS",
+      "frequency": 122700,
+      "tower_frequency": 120625, 
+      "ground_frequency": 120625, 
+      "landings": ["09", "27"],
+      "departures": ["27", "09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09", "27"],
+        "takeoff_ends": ["27", "09"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Houndsfield 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Houndsfield 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLEB": {
+      "name": "EarlyBirds Airfield",
+      "sender": "SLEB ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 120175, 
+      "ground_frequency": 120175, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Rundlelawn 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Rundlelawn 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLBA": {
+      "name": "Second Life Blue Angels",
+      "sender": "SLBA ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 122900, 
+      "ground_frequency": 121800, 
+      "landings": ["27L","09L","27R","09R"],
+      "departures": ["27L","09L","27R","09R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["27L","09R"],
+        "takeoff_ends": ["09R","27L"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["27R","09LR"],
+        "takeoff_ends": ["09L","27R"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Auburn Bay",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLAI": {
+      "name": "Second Life Aerobatic Airport",
+      "sender": "SLAI ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 128850, 
+      "ground_frequency": 121750, 
+      "landings": ["27L","09L","27R","09R"],
+      "departures": ["27L","09L","27R","09R"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": ["27L","09R"],
+        "takeoff_ends": ["09R","27L"]
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": ["27R","09LR"],
+        "takeoff_ends": ["09L","27R"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Quigley",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLAV": {
+      "name": "HA Aviation Complex",
+      "sender": "SLAV ATC",
+      "weather_zone": "JEOGEOT_INTERIOR_PLAINS",
+      "frequency": 122700,
+      "tower_frequency": 128050, 
+      "ground_frequency": 128050, 
+      "landings": [],
+      "departures": [],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_L",
+        "physical_id": "RWY_L",
+        "landing_ends": [],
+        "takeoff_ends": []
+      },
+      {
+        "id": "RWY_R",
+        "physical_id": "RWY_R",
+        "landing_ends": [],
+        "takeoff_ends": []
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Mallee 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Mallee 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLDE": {
+      "name": "Decimo Airbase",
+      "sender": "SLDE ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 127600, 
+      "ground_frequency": 127600, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLJG": {
+      "name": "Jeogeot Gulf Airport",
+      "sender": "SLJG ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 128150, 
+      "ground_frequency": 121825, 
+      "landings": ["27"],
+      "departures": ["09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["27"],
+        "takeoff_ends": ["09"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Spurness",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLXA": {
+      "name": "Xilted Airstrip",
+      "sender": "SLXA ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 125050, 
+      "ground_frequency": 125050, 
+      "landings": ["15"],
+      "departures": ["33"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["15"],
+        "takeoff_ends": ["33"]
+      }
+      ]
+    },
+    "NAFP": {
+      "name": "Pieup Naval Airfield",
+      "sender": "NAFP ATC",
+      "weather_zone": "JEOGEOT_INTERIOR_PLAINS",
+      "frequency": 122700,
+      "tower_frequency": 127375, 
+      "ground_frequency": 121775, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Pieup",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLJR": {
+      "name": "Jeogeot Regional Airport",
+      "sender": "SLJR ATC",
+      "weather_zone": "JEOGEOT_INTERIOR_PLAINS",
+      "frequency": 122700,
+      "tower_frequency": 126650, 
+      "ground_frequency": 121875, 
+      "landings": ["09"],
+      "departures": ["27"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09"],
+        "takeoff_ends": ["27"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Hyojong 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Hyojong 2",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H3",
+          "name": "Hyojong 3",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H4",
+          "name": "Hyojong 4",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLGU": {
+      "name": "Guksu Field",
+      "sender": "SLGU ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 123000, 
+      "ground_frequency": 121825, 
+      "landings": ["09","27"],
+      "departures": ["27","09"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["09","27"],
+        "takeoff_ends": ["27","09"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Guksu 1",
+          "max_simultaneous": 1
+        },
+        {
+          "id": "H2",
+          "name": "Guksu 2",
+          "max_simultaneous": 1
+        }
+      ]
+    },
+    "SLSK": {
+      "name": "Subak Airstrip",
+      "sender": "SLSK ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 124350, 
+      "ground_frequency": 124350, 
+      "landings": ["22", "04"],
+      "departures": ["04", "22"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["22", "04"],
+        "takeoff_ends": ["04", "22"]
+      }
+      ]
+    },
+    "SLGO": {
+      "name": "Gaori Aero Club",
+      "sender": "SLGO ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 120325, 
+      "ground_frequency": 120325, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ]
+    },
+    "SLZI": {
+      "name": "SLZIN RESORTS Airfield",
+      "sender": "SLZI ATC",
+      "weather_zone": "JEOGEOT_COASTAL_MARITIME",
+      "frequency": 122700,
+      "tower_frequency": 126575, 
+      "ground_frequency": 126575, 
+      "landings": ["18"],
+      "departures": ["36"],
+      "taxiways": ["Main"],
+      "runways": [
+      {
+        "id": "RWY_MAIN",
+        "physical_id": "RWY_MAIN",
+        "landing_ends": ["18"],
+        "takeoff_ends": ["36"]
+      }
+      ],
+      "helipads": [
+        {
+          "id": "H1",
+          "name": "Nakgol",
+          "max_simultaneous": 1
+        }
       ]
     }
   }

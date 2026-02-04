@@ -117,6 +117,68 @@
         "qnh_variation": 5,
         "favored_conditions": ["CLEAR", "FEW", "BKN", "OVC", "MIST","HAZE"]
     },
+    "JEOGEOT_NORTH_TRANSITION": {
+        "base_temp": 24,
+        "temp_variation": 4,
+        "wind_min": 3,
+        "wind_max": 20,
+        "qnh_mean": 1012,
+        "qnh_variation": 6,
+        "favored_conditions": [
+            "FEW",
+            "BKN",
+            "OVC",
+            "RAIN",
+            "MIST",
+            "HAZE"
+        ]
+    },
+    "JEOGEOT_INTERIOR_PLAINS": {
+        "base_temp": 29,
+        "temp_variation": 5,
+        "wind_min": 4,
+        "wind_max": 24,
+        "qnh_mean": 1010,
+        "qnh_variation": 6,
+        "favored_conditions": [
+            "CLEAR",
+            "FEW",
+            "BKN",
+            "HAZE",
+            "DUST"
+        ]
+    },
+    "JEOGEOT_COASTAL_MARITIME": {
+        "base_temp": 26,
+        "temp_variation": 4,
+        "wind_min": 6,
+        "wind_max": 28,
+        "qnh_mean": 1013,
+        "qnh_variation": 7,
+        "favored_conditions": [
+            "FEW",
+            "BKN",
+            "OVC",
+            "RAIN",
+            "SEA_FOG",
+            "MIST"
+        ]
+    },
+    "JEOGEOT_SOUTHERN_EXPOSED": {
+        "base_temp": 25,
+        "temp_variation": 3,
+        "wind_min": 8,
+        "wind_max": 34,
+        "qnh_mean": 1009,
+        "qnh_variation": 8,
+        "favored_conditions": [
+            "BKN",
+            "OVC",
+            "RAIN",
+            "SQUALL",
+            "SEA_FOG"
+        ]
+    },
     "CORSICA_COLD_CONTINENTAL": {
         "base_temp": 2,
         "temp_variation": 7,
